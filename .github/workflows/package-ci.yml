@@ -1,0 +1,81 @@
+name: jiannius package ci
+
+# Reusable CI for Jiannius Laravel packages — atom, playbook, and anything
+# spawned from the package skeleton. Packages have no artisan binary, so everything
+# runs through Orchestra Testbench.
+#
+#   jobs:
+#     ci:
+#       uses: jiannius/playbook/.github/workflows/package-ci.yml@v1
+#
+# COST: every job is billed rounded up to a whole minute, so the dependency
+# matrix defaults to ONE leg. Opt into ["lowest","highest"] on a package where
+# the lower bound genuinely matters — it doubles the spend for that repo.
+# See laravel-ci.yml for the full cost notes.
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: PHP version to run against.
+        type: string
+        default: '8.4'
+      dependency-versions:
+        description: >-
+          JSON array of composer strategies to matrix over. One leg by default;
+          each extra leg is another whole billed minute on every run.
+        type: string
+        default: '["highest"]'
+
+concurrency:
+  group: jiannius-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        dependencies: ${{ fromJSON(inputs.dependency-versions) }}
+
+    name: php ${{ inputs.php-version }} · ${{ matrix.dependencies }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Composer cache location
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore composer cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php${{ inputs.php-version }}-${{ matrix.dependencies }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: composer-${{ runner.os }}-php${{ inputs.php-version }}-${{ matrix.dependencies }}-
+
+      # Plain composer rather than a third-party action, matching the package skeleton.
+      # One less dependency, and one less action tag to get wrong.
+      - name: Install dependencies (${{ matrix.dependencies }})
+        run: |
+          if [ "${{ matrix.dependencies }}" = "lowest" ]; then
+            composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction --no-progress
+          else
+            composer update --prefer-dist --no-interaction --no-progress
+          fi
+
+      - name: Code style
+        run: vendor/bin/pint --test
+
+      - name: Tests
+        run: vendor/bin/pest

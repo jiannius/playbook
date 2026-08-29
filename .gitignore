@@ -1,0 +1,6 @@
+/vendor/
+/node_modules/
+.DS_Store
+/.claude/worktrees/
+/.claude/settings.local.json
+.phpunit.cache/

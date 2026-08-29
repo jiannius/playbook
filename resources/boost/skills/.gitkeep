@@ -1,0 +1,5 @@
+Skills shipped here are discovered by Laravel Boost automatically —
+Composer::packagesDirectoriesWithBoostSkills() scans every installed package
+for resources/boost/skills/. No copy command is needed.
+
+Step 3 moves jiannius-dev and jiannius-qa-tester in here.

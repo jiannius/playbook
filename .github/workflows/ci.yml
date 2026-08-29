@@ -1,0 +1,31 @@
+name: ci
+
+# playbook's own CI, calling the reusable package workflow this repo ships.
+# Dogfooding on purpose: if package-ci.yml breaks, it breaks here first.
+#
+# paths-ignore keeps pure documentation edits off the runner. Most commits to
+# this repo are docs, and a whole billed minute to lint a markdown file we never
+# lint is the easiest saving available.
+#
+# Deliberately NOT ignored: resources/boost/**. A guideline or skill change is
+# exactly what the suite asserts on — tests/Feature/CheckCommandTest.php checks
+# the rendered text really contains our rules — so those must still run.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - README.md
+      - LICENSE
+      - .gitattributes
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - README.md
+      - LICENSE
+      - .gitattributes
+
+jobs:
+  ci:
+    uses: ./.github/workflows/package-ci.yml

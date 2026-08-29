@@ -1,0 +1,184 @@
+name: jiannius laravel ci
+
+# Reusable CI for Jiannius Laravel applications.
+#
+#   jobs:
+#     ci:
+#       uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v1
+#       secrets: inherit
+#
+# ---------------------------------------------------------------------------
+# COST. We run private repos on GitHub's free allowance and pay nothing, so
+# this workflow is written to fit inside it. Three rules drive the design:
+#
+#   1. Every JOB is billed rounded UP to a whole minute. A 5-second job costs
+#      the same as a 59-second one. So this file has exactly ONE job — the
+#      branch guard is a step, not a job, because as a job it cost a full
+#      minute to compare two strings.
+#   2. Private minutes are metered; public repos are unmetered. If a repo can
+#      be public, it costs nothing at all.
+#   3. Superseded runs keep billing unless cancelled. Hence `concurrency`.
+#
+# Before adding a job here, check it is worth a whole minute of the monthly
+# allowance on every repo that calls this.
+# ---------------------------------------------------------------------------
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: PHP version to run against.
+        type: string
+        default: '8.4'
+      node-version:
+        description: Node version. Ignored when build-assets is false.
+        type: string
+        default: '22'
+      base-branch:
+        description: The integration branch pull requests must target.
+        type: string
+        default: dev
+      database:
+        description: >-
+          Which driver CI runs against — mysql (default) or sqlite.
+          Our apps are MySQL in production, so MySQL is the honest default:
+          a suite that only ever passes on sqlite proves less than it looks.
+        type: string
+        default: mysql
+      mysql-version:
+        description: Docker tag for the MySQL service.
+        type: string
+        default: '8.0'
+      build-assets:
+        description: >-
+          Run npm ci and npm run build. Set false for an app with no front-end
+          build — it is the most expensive part of this workflow.
+        type: boolean
+        default: true
+      check-schema:
+        description: Run migrate:fresh --seed to prove the combined migration set applies.
+        type: boolean
+        default: true
+      check-playbook:
+        description: Run playbook:check. Set false for repos not yet onboarded to jiannius/playbook.
+        type: boolean
+        default: true
+
+# A second push to the same branch cancels the first. Without this, an
+# abandoned run keeps consuming the allowance to produce a result nobody reads.
+concurrency:
+  group: jiannius-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    # Defined unconditionally — Actions cannot attach a service behind an `if:`.
+    # A sqlite project pays a few seconds for a container it never connects to,
+    # which is still cheaper than a second job.
+    services:
+      mysql:
+        image: mysql:${{ inputs.mysql-version }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      # A step, not a job. As a job this cost a whole billed minute to compare
+      # two strings; as a step it is free and fails just as fast.
+      - name: Pull request must target ${{ inputs.base-branch }}
+        if: github.event_name == 'pull_request' && github.base_ref != inputs.base-branch
+        run: |
+          echo "::error::This PR targets '${{ github.base_ref }}' but the integration branch is '${{ inputs.base-branch }}'."
+          echo "Retarget the pull request, then push again."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer:v2
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Composer cache location
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore composer cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php${{ inputs.php-version }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ inputs.php-version }}-
+
+      - name: Setup Node
+        if: inputs.build-assets
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Laravel loads .env non-destructively — it never overwrites a variable
+      # already in the real environment (Illuminate\Support\Env builds an
+      # immutable repository). So exporting these beats .env.example without
+      # editing the file.
+      - name: Point Laravel at MySQL
+        if: inputs.database == 'mysql'
+        run: |
+          {
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=testing"
+            echo "DB_USERNAME=root"
+            echo "DB_PASSWORD=root"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Node dependencies
+        if: inputs.build-assets
+        run: npm ci
+
+      - name: Build assets
+        if: inputs.build-assets
+        run: npm run build
+
+      - name: Code style
+        run: vendor/bin/pint --test
+
+      # Two parallel branches each run only their OWN migrations against their
+      # OWN database, so the combined set is untested until both land — and
+      # migrate:fresh replays in filename timestamp order, which need not match
+      # merge order. CI always starts empty, so it tests the real sequence every
+      # time and nobody has to remember to.
+      - name: Migrations apply from empty
+        if: inputs.check-schema
+        run: php artisan migrate:fresh --seed --no-interaction
+
+      - name: Tests
+        run: vendor/bin/pest
+
+      # Boost has no verify mode. This is the gate that makes the standard stick.
+      # Exit 1 = stale, run boost:update and commit. Exit 2 = misconfigured.
+      - name: Guidelines are current
+        if: inputs.check-playbook
+        run: php artisan playbook:check
