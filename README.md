@@ -16,7 +16,7 @@ format and adds only the enforcement Boost lacks. See
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
 | **`playbook:check`** | The CI gate. Fails the build when a repo's agent files are stale |
-| **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v1` |
+| **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v0` |
 | **Hooks** | Claude Code hook definitions, rendered into `.claude/settings.json` |
 | **The map** | This README — where each piece of the system lives and why |
 | **Onboarding** | `ONBOARDING.md` — what to do in your first hour |

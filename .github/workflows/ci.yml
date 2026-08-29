@@ -12,6 +12,9 @@ name: ci
 # the rendered text really contains our rules — so those must still run.
 
 on:
+  # Lets us re-run CI without inventing a commit — useful when proving a
+  # workflow change, and free on a public repo.
+  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:

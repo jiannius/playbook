@@ -4,7 +4,7 @@ name: jiannius laravel ci
 #
 #   jobs:
 #     ci:
-#       uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v1
+#       uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v0
 #       secrets: inherit
 #
 # ---------------------------------------------------------------------------

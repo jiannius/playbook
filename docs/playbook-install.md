@@ -144,7 +144,7 @@ Four files in `.github/workflows/`. Consumers **call** them, never copy them.
 ```yaml
 jobs:
   ci:
-    uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v1
+    uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v0
     secrets: inherit
 ```
 
@@ -176,7 +176,7 @@ Two consequences worth knowing:
   sqlite. Those are real bugs rather than CI noise — though a repo mid-migration can set
   `database: sqlite` to defer them.
 
-**`tag-major.yml` is the ladder applied to ourselves.** Consumers pin `@v1` while composer
+**`tag-major.yml` is the ladder applied to ourselves.** Consumers pin a major tag while composer
 resolves semver, so every release needs two tags and the moving one is exactly what a person
 forgets. It is not written as a rule anywhere; it is a workflow that fires on the semver tag.
 

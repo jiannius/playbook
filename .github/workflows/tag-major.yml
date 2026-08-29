@@ -1,6 +1,6 @@
 name: move major tag
 
-# Consumers pin reusable workflows with `@v1`, but composer resolves semver.
+# Consumers pin reusable workflows with a major tag such as `@v0`, but composer resolves semver.
 # That means every release needs two tags, and the moving one is exactly the
 # kind of step a person forgets. So it is not a rule — it is this file.
 #

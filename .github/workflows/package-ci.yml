@@ -6,7 +6,7 @@ name: jiannius package ci
 #
 #   jobs:
 #     ci:
-#       uses: jiannius/playbook/.github/workflows/package-ci.yml@v1
+#       uses: jiannius/playbook/.github/workflows/package-ci.yml@v0
 #
 # COST: every job is billed rounded up to a whole minute, so the dependency
 # matrix defaults to ONE leg. Opt into ["lowest","highest"] on a package where
