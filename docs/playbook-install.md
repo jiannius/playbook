@@ -148,9 +148,26 @@ jobs:
     secrets: inherit
 ```
 
+**Keep the calling file's `name:` when replacing an existing workflow.** A `workflow_run` trigger
+matches on the *name* of the workflow that ran, not its filename. An app whose `deploy.yml` says
+`workflow_run: workflows: [tests]` stops deploying the moment the caller is renamed — and it fails
+silently, because a trigger that never fires reports nothing. The app skeleton is exactly this
+shape. Replace the contents of `tests.yml`, leave `name: tests` alone.
+
 Inputs on `laravel-ci.yml`: `php-version` (8.4), `node-version` (22), `base-branch` (dev),
-`build-assets`, `check-schema`, `check-playbook`. The last two default true; a repo not yet
-onboarded to playbook sets `check-playbook: false` rather than failing every build.
+`build-assets`, `browser-tests`, `check-schema`, `check-playbook`. `check-schema` and
+`check-playbook` default true; a repo not yet onboarded to playbook sets `check-playbook: false`
+rather than failing every build.
+
+**`browser-tests` defaults false, and an app with `tests/Browser/` must turn it on.** Pest's
+browser plugin drives a real Chromium, which the runner does not have; without the download the
+suite dies on `PlaywrightNotInstalledException`. It is off by default because the download is slow
+and most repos gain nothing from it — but the failure mode for forgetting it is loud and immediate,
+which is the right way round. It also implies `npm ci` even when `build-assets` is false, since the
+`playwright` CLI comes from the project's own devDependencies.
+
+This is the one input where the reusable workflow is not yet a drop-in replacement for a
+hand-rolled `tests.yml`: the app skeleton has browser tests, so its swap depends on this.
 
 **On the database. CI runs MySQL by default.**
 

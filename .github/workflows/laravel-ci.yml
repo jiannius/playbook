@@ -55,6 +55,16 @@ on:
           build — it is the most expensive part of this workflow.
         type: boolean
         default: true
+      browser-tests:
+        description: >-
+          Download the Chromium binary so Pest's browser tests can run. Off by
+          default: it is a slow download, and a repo with no tests/Browser gains
+          nothing from it. Turn it on for any app that has them — without it
+          Pest throws PlaywrightNotInstalledException and the suite fails.
+          Requires `playwright` in the project's package.json devDependencies;
+          npm ci is run for you even when build-assets is false.
+        type: boolean
+        default: false
       check-schema:
         description: Run migrate:fresh --seed to prove the combined migration set applies.
         type: boolean
@@ -123,8 +133,10 @@ jobs:
           key: composer-${{ runner.os }}-php${{ inputs.php-version }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: composer-${{ runner.os }}-php${{ inputs.php-version }}-
 
+      # Browser tests need node too, even in a repo that builds no assets —
+      # the playwright CLI comes from the project's own devDependencies.
       - name: Setup Node
-        if: inputs.build-assets
+        if: inputs.build-assets || inputs.browser-tests
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
@@ -155,12 +167,19 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Install Node dependencies
-        if: inputs.build-assets
+        if: inputs.build-assets || inputs.browser-tests
         run: npm ci
 
       - name: Build assets
         if: inputs.build-assets
         run: npm run build
+
+      # Only chromium. --with-deps pulls the system libraries the runner lacks.
+      # Downloading all three engines would roughly triple this step for browsers
+      # we never drive.
+      - name: Install Playwright browser
+        if: inputs.browser-tests
+        run: npx playwright install --with-deps chromium
 
       - name: Code style
         run: vendor/bin/pint --test
