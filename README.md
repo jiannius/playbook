@@ -79,10 +79,24 @@ will disagree within a quarter.
 
 ## Migrations in flight
 
-| Skill | From | To | Why |
+| Skill | From | To | State |
 |---|---|---|---|
-| `jiannius-dev` | the internal plugin marketplace | here | Useless outside a repo |
-| `jiannius-qa-tester` | the internal plugin marketplace | here | Needs the PR checked out — but confirm a QA person has composer installed first |
+| `jiannius-dev` | the internal plugin marketplace | `resources/boost/skills/jiannius-dev` | **Landed here.** Marketplace copy still live |
+| `jiannius-qa-tester` | the internal plugin marketplace | `resources/boost/skills/jiannius-qa-tester` | **Landed here.** Marketplace copy still live |
+
+Both are useless outside a repo, so composer is the right channel. They stay in **both** places
+until `composer require jiannius/playbook` actually resolves and the repos have installed it —
+removing the marketplace copy first would leave everyone with neither.
+
+**The QA-composer question is settled.** The earlier worry was that a QA person might not have
+`composer install` run, and so would never see a skill shipped in `vendor/`. Two things close it:
+Boost's `SkillWriter` copies each skill out of `vendor/` into **`.claude/skills/<name>/`**, which is
+a committed directory — so a plain `git clone` carries it. And step one of the QA job is
+`composer install` + `npm run build` to get the PR running on Herd, so anyone who can do the work
+at all already has composer.
+
+That does depend on `.claude/skills/` being **committed, not gitignored**. Keep it that way — it is
+what makes these skills reach a teammate who never runs composer.
 
 Everything else in the internal plugin marketplace stays. Seven of its nine plugins are work with no
 codebase attached.
@@ -94,8 +108,23 @@ copy of a convention is the problem this repo exists to prevent.
 
 ## Status
 
-Nothing is built yet. Current work is the delivery and enforcement specification:
-[`docs/playbook-install.md`](docs/playbook-install.md).
+The specification is [`docs/playbook-install.md`](docs/playbook-install.md) — the source of truth
+for delivery and enforcement. Against it:
+
+**Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
+`playbook:check` and its tests; four reusable CI workflows; the two repo-scoped skills at
+`resources/boost/skills/`.
+
+**Blocked** — the repo is not on Packagist, so `composer require jiannius/playbook` 404s and
+nothing downstream can install. Submit at packagist.org/packages/submit; everything below waits
+on it.
+
+**Next, in order** — wire the app skeleton (`jiannius/playbook` in `boost.json` `packages`, a
+`skills` entry so `boost:update` installs skills at all, and a `require-dev`); retire the two
+marketplace copies once repos have installed the package; paste the org instructions; then hooks
+and the `permissions.deny` render target.
+
+`ONBOARDING.md`, listed in the map above, is not written yet.
 
 New teammate? Start with *How We Stay Aligned* — the four repos, what each is for, and what to
 do day to day whether or not you write code:
