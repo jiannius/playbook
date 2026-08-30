@@ -403,6 +403,18 @@ using a different editor.
 - **Custom content lives outside any managed block, always.** *(2026-08-28)*
 - **No vendor-specific work.** `AGENTS.md` is the general target and Boost already writes it for
   eight of its nine agents. *(2026-08-28)*
+- **Test enforcement is ours, not Boost's install-time answer.** Boost asks whether to enforce
+  tests during `boost:install` and writes the resulting block into the agent files, but
+  `boost.json` does not persist the answer. So every `composer update` runs `boost:update`, which
+  recomposes with the answer defaulted off and **silently deletes the block** — no error, no
+  failure, the rule simply stops being there. Observed on the app skeleton against
+  `laravel/boost` 2.7.0.
+
+  A rule that evaporates on an unrelated command is the exact decay this package exists to stop,
+  and the fix is the one the enforcement ladder already prescribes: own the text. It now ships in
+  `resources/boost/guidelines/core.blade.php`, which makes it version-controlled, reviewable, and
+  enforced by `playbook:check` like everything else here. `tests/Feature/GuidelinesTest.php`
+  fails if it goes missing again. *(2026-08-30)*
 
 ## Still to confirm
 
