@@ -32,6 +32,23 @@ support, who never open a repo and are the people those rules mostly serve.
 If you are writing anything client-facing and unsure which product a piece of work belongs to,
 check there rather than guessing.
 
+### Every change ships with a test
+
+Write or update a test for the change, then run it before you call the work done. If something
+genuinely cannot be tested, say so plainly rather than leaving it quietly unverified.
+
+- Run the **minimum** set that proves the change while you work — a filename or a filter, not the
+  whole suite. `php artisan test --compact` with a filter is usually the right shape. CI runs
+  everything.
+- Test the behaviour, not the implementation. A test that breaks on every refactor costs more than
+  it protects.
+- A bug fix starts with a test that fails for the reason the bug exists. Otherwise you cannot know
+  the fix worked, only that the symptom stopped.
+
+CI runs the suite on every pull request, but **CI can only run tests that exist**. Whether a change
+arrives with one is the part no check can decide for you — which is why it is written here rather
+than left to the pipeline.
+
 ### CI must stay inside the free allowance
 
 We pay nothing for GitHub Actions and intend to keep it that way. Private repos meter against a
