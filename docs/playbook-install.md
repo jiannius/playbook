@@ -3,7 +3,9 @@
 How the standard reaches a repo, what Laravel Boost already handles, and the three
 gaps `playbook` fills.
 
-Status: **draft for review**. Nothing is built yet.
+Status: **adopted, partly built.** Guidelines, `playbook:check`, the four reusable workflows and
+the two skills exist. Delivery is blocked until the repo is on Packagist — see the README's Status
+for what is built, what is blocked, and what comes next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target
 > output, managed markers, idempotency rules. Reading `vendor/laravel/boost` showed most of that
@@ -180,19 +182,29 @@ Two consequences worth knowing:
 resolves semver, so every release needs two tags and the moving one is exactly what a person
 forgets. It is not written as a rule anywhere; it is a workflow that fires on the semver tag.
 
-### 2. Skills — needs a decision
+### 2. Skills — built
 
-Two skills are migrating in from the internal plugin marketplace because they are useless outside a repo:
+Two skills moved in from the internal plugin marketplace because they are useless outside a repo:
 `jiannius-dev` (changing an existing Laravel project) and `jiannius-qa-tester` (setting up a
-PR on Herd and browser-testing it). Confirm a QA person actually has composer and vendor
-installed before moving the second — if they only ever review PRs on a machine without a
-full install, it belongs in the marketplace after all.
+PR on Herd and browser-testing it). Both now live at `resources/boost/skills/<name>/SKILL.md`.
 
-The other seven the internal plugin marketplace skills stay where they are. Composer is repo-scoped; the
+**The QA-composer question is closed.** The worry was that a QA person without `composer install`
+would never see a skill shipped in `vendor/`. `SkillWriter::writeNonCustomSkill()` copies the skill
+directory out of `vendor/` into `.claude/skills/<name>/` — a committed path, so a plain `git clone`
+carries it. And the QA job opens with `composer install` and `npm run build` to get the PR onto
+Herd, so anyone who can do the work has composer regardless. The dependency to preserve is that
+**`.claude/skills/` must stay committed, not gitignored**.
+
+Both skills stay in the marketplace as well until the package is installable and installed;
+removing the marketplace copy first would leave everyone with neither. That is a temporary
+double copy, and the README's warning applies — the composer copy is canonical, and the
+marketplace copy is not to be edited.
+
+The other seven internal plugin marketplace skills stay where they are. Composer is repo-scoped; the
 marketplace is user-scoped and therefore the superset. See the README's second routing
 question.
 
-**What `jiannius-dev` should gain when it moves.** Only the parts of parallel work that a check
+**What `jiannius-dev` gained on the way in.** Only the parts of parallel work that a check
 cannot make for you — everything mechanisable went to CI above:
 
 - **When to run two branches at once, and when to stagger.** Parallel is fine when the features
@@ -224,17 +236,43 @@ skills discovered:     …/vendor/jiannius/playbook/resources/boost/skills
 ```
 
 So skills need **no copy command and no GitHub repo** — drop them in the directory. The three
-options this section used to weigh are moot.
+options this section used to weigh (a GitHub skill repo, a `playbook:install` copier, or folding
+the content into the guidelines as prose) are all moot, and are no longer under consideration.
 
-Three options, no recommendation yet — this needs a look at how the GitHub provider is configured
-before choosing:
+**One wiring trap, verified against 2.7.0.** Shipping the directory is necessary but not
+sufficient — **skills are opt-in per repo, and the opt-in is not `packages`.**
 
-- **a.** Publish playbook's skills as a GitHub repo Boost pulls from. Uses the supported path;
-  adds a second distribution channel to keep in sync.
-- **b.** Write a small `playbook:install` that copies `skills/` from the package into
-  `.claude/skills/`. Duplicates a little of Boost, but keeps one source of truth.
-- **c.** Fold the skill content into the guidelines as prose. Loses on-demand loading — the
-  content becomes always-resident, which is the context cost this whole design tries to avoid.
+`UpdateCommand` computes `$hasSkills = ! --ignore-skills && ($config->hasSkills() || is_dir('.ai/skills'))`,
+and `Config::hasSkills()` is just `getSkills() !== []` reading the `skills` key of `boost.json`.
+That key is only ever written by `InstallCommand`, and only when the operator ticked **Agent
+Skills** in the install prompt (`setSkills($this->installedSkillNames)` — it stores the list of
+installed skill names, which `SkillWriter::sync()` later diffs to evict stale ones).
+
+The consequence: a repo that lists `jiannius/playbook` under `packages` but has an empty or absent
+`skills` key gets the guidelines and **silently no skills**, on every `boost:update`, forever. It
+is not an error — `boost:update` reports success. The app skeleton's `boost.json` is in exactly
+that state today: `packages` names `jiannius/atom`, and there is no `skills` key at all.
+
+So the skeleton wiring is two edits, not one: add `jiannius/playbook` to `packages`, **and** seed a
+non-empty `skills` list (or make "run `boost:install` and tick Agent Skills" an onboarding step).
+Worth a `playbook:check` guard later — the same failure is invisible in every repo it hits.
+
+**Authoring constraint: no `#` comments inside fenced code blocks in a `SKILL.md`.**
+`SkillWriter::copyFile()` pushes every `.md` through `MarkdownFormatter::format()`, so what lands
+in `.claude/skills/` is *reformatted*, not copied byte-for-byte. That formatter's heading rule is
+
+```
+preg_replace('/(#{1,4} .+)\n(?!\n)/m', "$1\n\n", $content)
+```
+
+— unanchored, and with no notion of code fences. A line like `composer install  # if PHP deps
+changed` therefore looks like a heading, and the installed copy gains a blank line the source
+never had; a six-line block of commented shell commands comes out double-spaced. Verified against
+`laravel/boost 2.7.0`, and worth reporting upstream.
+
+Put the explanation in a table beside the block instead — it reads better anyway. `SkillsTest`
+asserts the installed copy is byte-identical to the source, so a reintroduced `#` comment fails
+CI here rather than quietly degrading what teammates get.
 
 ### 3. `.claude/settings.json` — permissions *and* hooks
 
