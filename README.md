@@ -113,16 +113,24 @@ for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
 `playbook:check` and its tests; four reusable CI workflows; the two repo-scoped skills at
-`resources/boost/skills/`.
+`resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
+`composer require --dev jiannius/playbook` resolves.
 
-**Blocked** — the repo is not on Packagist, so `composer require jiannius/playbook` 404s and
-nothing downstream can install. Submit at packagist.org/packages/submit; everything below waits
-on it.
+**In review** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the package, names
+it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`, and swaps its
+`tests.yml` for a call into `laravel-ci.yml@v0`. That is the first end-to-end run of the delivery
+chain outside Testbench fixtures — and the first repo whose `dev` branch exists, which the
+base-ref guard has always assumed.
 
-**Next, in order** — wire the app skeleton (`jiannius/playbook` in `boost.json` `packages`, a
-`skills` entry so `boost:update` installs skills at all, and a `require-dev`); retire the two
-marketplace copies once repos have installed the package; paste the org instructions; then hooks
-and the `permissions.deny` render target.
+**Blocked, and not on us** — no GitHub Actions runner will accept a job in a *private* org repo:
+*"recent account payments have failed or your spending limit needs to be increased"*. The jobs are
+created, assigned nothing, and fail in two seconds. Public repos are unmetered, so playbook's own
+CI is unaffected; the skeleton's is dead until org billing is settled. Every check in this system
+passes locally in the meantime.
+
+**Next, in order** — merge the skeleton wiring; retire the two marketplace copies once repos have
+installed the package; paste the org instructions; then hooks and the `permissions.deny` render
+target.
 
 `ONBOARDING.md`, listed in the map above, is not written yet.
 
