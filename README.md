@@ -113,16 +113,26 @@ for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
 `playbook:check` and its tests; four reusable CI workflows; the two repo-scoped skills at
-`resources/boost/skills/`.
+`resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
+`composer require --dev jiannius/playbook` resolves.
 
-**Blocked** — the repo is not on Packagist, so `composer require jiannius/playbook` 404s and
-nothing downstream can install. Submit at packagist.org/packages/submit; everything below waits
-on it.
+**Verified end to end** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the
+package, names it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`,
+and swaps its `tests.yml` for a call into `laravel-ci.yml@v0`. On 2026-09-02 that call went green
+in a private repo — pint, `migrate:fresh --seed` from empty on MySQL 8.0, 39 tests / 91 assertions
+including the Chromium browser suite, and `playbook:check` reporting the guidelines current. First
+run of the delivery chain outside Testbench fixtures, and the first repo whose `dev` branch exists,
+which the base-ref guard has always assumed. Merged to `dev` the same day.
 
-**Next, in order** — wire the app skeleton (`jiannius/playbook` in `boost.json` `packages`, a
-`skills` entry so `boost:update` installs skills at all, and a `require-dev`); retire the two
-marketplace copies once repos have installed the package; paste the org instructions; then hooks
-and the `permissions.deny` render target.
+**Unblocked** — the GitHub Actions billing stop cleared on 2026-09-02. While it held, no runner
+would accept a job in a *private* org repo: *"recent account payments have failed or your spending
+limit needs to be increased"*. Jobs were created, assigned nothing, and failed in two seconds
+having run no steps. Public repos are unmetered, so playbook's own CI never saw it. Worth keeping
+in the record: a job that dies that fast, before checkout, is a billing state and not a code result.
+
+**Next, in order** — retire the two marketplace copies once the live repos have installed the
+package, not just the skeleton; paste the org instructions; then hooks and the
+`permissions.deny` render target.
 
 `ONBOARDING.md`, listed in the map above, is not written yet.
 
