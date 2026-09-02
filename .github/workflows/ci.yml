@@ -32,3 +32,10 @@ on:
 jobs:
   ci:
     uses: ./.github/workflows/package-ci.yml
+    # Both ends of the declared range, not just the newest. composer.json says
+    # laravel/boost ^2.3 and this package is what pins Boost for the whole
+    # fleet, so the floor is a promise to every repo that installs it — and an
+    # untested floor is a guess. The extra leg is another billed minute, which
+    # is free here: this repo is public, and public minutes are unmetered.
+    with:
+      dependency-versions: '["lowest","highest"]'
