@@ -133,6 +133,24 @@ in CI rather than in a written rule.**
 | `migrate:fresh --seed` on every PR | "whoever merges second must test the combined schema" | Needs a `services:` database in the job |
 | PR base branch is `dev` | "branch off dev" | One `if: github.base_ref != 'dev'` guard |
 | Branch is current with `dev` | "pull dev daily" | GitHub branch protection setting — no code at all |
+| `gitleaks` on the tracked tree | "never commit a secret" | Runs **first**, and `--redact` so a finding is not reprinted into a log more people can read |
+| `composer audit --locked` | "keep dependencies patched" | Runs **last**; only high and critical block |
+
+The last two came later than the rest and both landed with a decision worth recording.
+
+**The secret scan reads the index, not the working directory.** Pointed at the working directory it
+reads `vendor/`, `storage/`, `.env` and any local worktree — on the first host app surveyed that was
+195 findings, every one in a file git never sees. Exporting the index with `git checkout-index`
+gives the same answer in CI and on a laptop and asks the question that matters: is there a secret in
+the tree a clone receives. Agent-managed skill directories are excluded, because they arrive from
+packages and Boost's own `laravel-best-practices` skill carries a `STRIPE_SECRET=sk_live_abc123`
+example that would otherwise fail every repo in the fleet.
+
+**The advisory gate blocks on high and critical only.** Every severity would put the fleet red on
+someone else's release schedule, for something the PR under test did not cause, and a gate people
+learn to ignore enforces nothing. Lower severities print on every run. Both checks have an input
+(`check-secrets`, `check-audit`) for a repo mid-remediation — with the understanding that switching
+one off is a note to come back, not a fix.
 
 The migration one is the reason this section exists. When two branches each run only *their own*
 migrations against *their own* database, the combined schema is untested until both land — and
@@ -335,7 +353,7 @@ Candidate hooks, and where each really belongs:
 | `SessionStart` staleness nudge — "agent files stale, run `boost:update`" | **Keep.** In-session speed; CI stays the gate |
 | `PreToolUse` block prod commands — deny `migrate` / `db:*` on a non-local connection | **Keep**, with the caveat below |
 | `PostToolUse` lint the edited file | → git `pre-commit`. Covers everyone; the hook is only faster |
-| `PreToolUse` secret guard | → `gitleaks` in CI + `pre-commit`. Portable and better |
+| `PreToolUse` secret guard | → `gitleaks` in CI + `pre-commit`. Portable and better. **The CI half is built** — see 1b; the pre-commit half is not |
 
 Caveat on the prod guard: it binds Claude Code only. A teammate in Cursor typing
 `php artisan migrate` is stopped by nothing. **The real control is not having production
