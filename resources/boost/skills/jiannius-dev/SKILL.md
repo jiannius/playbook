@@ -44,7 +44,8 @@ already in context from the guidelines block.
    ```
    On a repo with no `pint.json`, run it on **your changed files only** — a wholesale run reformats
    unrelated code and buries the diff.
-4. Keep **tests green** — add/update tests for the change and run the suite.
+4. **Add or update the test** for the change and run it. Scope — minimum set while you work, whole
+   suite once before you push — is the guidelines block's rule, and this skill does not restate it.
 5. Run **`npm run build`** when you add Tailwind classes or JS (hashed assets won't render otherwise).
 6. Commit using **Conventional Commits**.
 7. Open a **`feature → dev` PR**, **link the issue**, and request the **QA tester** as reviewer.
