@@ -73,6 +73,14 @@ on:
         description: Run playbook:check. Set false for repos not yet onboarded to jiannius/playbook.
         type: boolean
         default: true
+      check-audit:
+        description: >-
+          Fail on a HIGH or CRITICAL composer advisory. Lower severities are
+          printed and do not block, because a medium published overnight should
+          not turn every open PR in the fleet red. Set false while a repo is
+          mid-remediation — and say when it goes back on.
+        type: boolean
+        default: true
 
 # A second push to the same branch cancels the first. Without this, an
 # abandoned run keeps consuming the allowance to produce a result nobody reads.
@@ -214,3 +222,64 @@ jobs:
       - name: Guidelines are current
         if: inputs.check-playbook
         run: php artisan playbook:check
+
+      # Last on purpose. An advisory is rarely the fault of the PR being tested,
+      # so it must not be the failure that hides a broken suite — by the time
+      # this runs, the interesting result is already known.
+      #
+      # `--locked` audits composer.lock rather than the installed tree, so it
+      # reports what this repo actually ships. Only high and critical block:
+      # every level would make a fleet-wide gate that fires on someone else's
+      # release schedule, and a gate people learn to ignore enforces nothing.
+      - name: Dependency advisories
+        if: inputs.check-audit
+        run: |
+          set -uo pipefail
+
+          # audit exits non-zero whenever it finds anything at all; severity is
+          # decided below, so its own status is not the answer here.
+          composer audit --locked --format=json > audit.json || true
+
+          cat > audit-gate.php <<'PHP'
+          <?php
+
+          $data = json_decode(file_get_contents('audit.json'), true) ?: [];
+          $blocking = [];
+          $lesser = 0;
+
+          foreach ($data['advisories'] ?? [] as $package => $items) {
+              foreach ($items as $item) {
+                  $severity = strtolower($item['severity'] ?? 'unknown');
+                  $line = sprintf(
+                      '%s %s — %s (%s)',
+                      $package,
+                      strtoupper($severity),
+                      $item['title'] ?? 'advisory',
+                      $item['cve'] ?? ($item['advisoryId'] ?? 'no id')
+                  );
+
+                  in_array($severity, ['high', 'critical'], true)
+                      ? $blocking[] = $line
+                      : $lesser++;
+              }
+          }
+
+          if ($lesser > 0) {
+              printf("%d advisory(ies) below high severity. Not blocking, still worth clearing.\n", $lesser);
+          }
+
+          if ($blocking === []) {
+              print("No high or critical advisories.\n");
+              exit(0);
+          }
+
+          foreach ($blocking as $line) {
+              printf("::error::%s\n", $line);
+          }
+
+          print("\nRun `composer audit` locally for the full report, then `composer update <package>`.\n");
+          print("If the fix cannot land now, set `check-audit: false` on this workflow and open an issue for it.\n");
+          exit(1);
+          PHP
+
+          php audit-gate.php
