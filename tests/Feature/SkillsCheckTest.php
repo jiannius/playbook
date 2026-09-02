@@ -15,25 +15,10 @@ use Jiannius\Playbook\Console\CheckCommand;
  * none of them report an error on their own.
  */
 
-/** A boost.json with playbook enabled and skills switched on. */
-function skillsBoostJson(array $overrides = []): array
-{
-    return array_merge([
-        'agents' => ['claude_code'],
-        'guidelines' => true,
-        'packages' => ['jiannius/playbook'],
-        'mcp' => false,
-        'skills' => ['jiannius-dev', 'jiannius-qa-tester'],
-    ], $overrides);
-}
-
 /** Write an agent file so the guidelines half is current and only the skills half is under test. */
 function currentGuidelines(string $dir, string $rendered, string $file = 'CLAUDE.md'): void
 {
-    file_put_contents(
-        $dir.'/'.$file,
-        "<laravel-boost-guidelines>\n".$rendered."\n\n</laravel-boost-guidelines>\n"
-    );
+    file_put_contents($dir.'/'.$file, boostBlock($rendered));
 }
 
 function git(string $dir, string $args): void
@@ -44,7 +29,7 @@ function git(string $dir, string $args): void
 it('reports BROKEN when boost.json has no skills list', function () {
     // The trap: "packages" names the package, so the guidelines arrive and look right,
     // while boost:update installs no skills at all and still reports success.
-    $this->fakeProject(skillsBoostJson(['skills' => []]));
+    $this->fakeProject(boostJson(['skills' => []]));
 
     $this->artisan('playbook:check')
         ->assertExitCode(CheckCommand::BROKEN)
@@ -52,7 +37,7 @@ it('reports BROKEN when boost.json has no skills list', function () {
 });
 
 it('reports STALE when a shipped skill was never installed', function () {
-    $dir = $this->fakeProject(skillsBoostJson(), installSkills: false);
+    $dir = $this->fakeProject(boostJson(), installSkills: false);
     currentGuidelines($dir, $this->renderedGuidelines());
 
     $this->artisan('playbook:check')
@@ -61,7 +46,7 @@ it('reports STALE when a shipped skill was never installed', function () {
 });
 
 it('reports STALE when an installed skill has drifted from the packaged source', function () {
-    $dir = $this->fakeProject(skillsBoostJson());
+    $dir = $this->fakeProject(boostJson());
     currentGuidelines($dir, $this->renderedGuidelines());
 
     $this->installSkills($dir, "---\nname: jiannius-dev\n---\n\nSomeone edited the installed copy.\n");
@@ -74,7 +59,7 @@ it('reports STALE when an installed skill has drifted from the packaged source',
 it('reports BROKEN when the installed skills are gitignored and untracked', function () {
     // This is not hypothetical. It is the state of the first host app we looked at:
     // /.claude in .gitignore, so Boost writes the skills and git throws them away.
-    $dir = $this->fakeProject(skillsBoostJson());
+    $dir = $this->fakeProject(boostJson());
     currentGuidelines($dir, $this->renderedGuidelines());
 
     git($dir, 'init -q');
@@ -89,7 +74,7 @@ it('accepts an ignored path whose skills are force-added, because those do reach
     // Ignored *and* tracked is a repo that force-added the directory. The pattern is
     // irrelevant once a file is tracked, and reporting it would be a false alarm — the
     // kind that teaches people to stop reading the check.
-    $dir = $this->fakeProject(skillsBoostJson());
+    $dir = $this->fakeProject(boostJson());
     currentGuidelines($dir, $this->renderedGuidelines());
 
     git($dir, 'init -q');
@@ -100,7 +85,7 @@ it('accepts an ignored path whose skills are force-added, because those do reach
 });
 
 it('reports OK when the skills are installed, faithful and reachable', function () {
-    $dir = $this->fakeProject(skillsBoostJson());
+    $dir = $this->fakeProject(boostJson());
     currentGuidelines($dir, $this->renderedGuidelines());
 
     $this->artisan('playbook:check')->assertExitCode(CheckCommand::OK);
@@ -111,7 +96,7 @@ it('checks every configured agent at its own skills path', function () {
     // SupportsSkills, each with its own directory — .claude/skills, .agents/skills for
     // Codex and OpenCode, .github/skills for Copilot. A repo that enables two agents has
     // two places the skills have to land, and installing one of them is not done.
-    $this->fakeProject(skillsBoostJson(['agents' => ['claude_code', 'codex']]));
+    $this->fakeProject(boostJson(['agents' => ['claude_code', 'codex']]));
 
     $exit = Artisan::call('playbook:check');
     $output = Artisan::output();

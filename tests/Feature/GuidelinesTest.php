@@ -2,31 +2,19 @@
 
 declare(strict_types=1);
 
-/** A boost.json with Boost set up and playbook enabled. */
-function guidelinesBoostJson(): array
-{
-    return [
-        'agents' => ['claude_code'],
-        'guidelines' => true,
-        'packages' => ['jiannius/playbook'],
-        'mcp' => false,
-        // Non-empty on purpose: an empty list is its own failure now (boost:update
-        // installs no skills at all), and this fixture is about the guidelines half.
-        'skills' => ['jiannius-dev', 'jiannius-qa-tester'],
-    ];
-}
+use Jiannius\Playbook\Console\CheckCommand;
 
 /**
- * Test enforcement used to arrive from Boost's own install-time answer. boost.json does not
- * persist that answer, so every `composer update` ran boost:update and silently deleted the
- * block from the agent files — no error, no diff anyone reviewed, the rule just went away.
- * Observed on the app skeleton against laravel/boost 2.7.0.
+ * Test enforcement used to arrive from Boost's own install-time answer, and evaporated on every
+ * `composer update` because boost.json never persisted that answer. The mechanism and the version
+ * it was observed against are recorded once, in docs/playbook-install.md — not restated here,
+ * where nobody would think to update it.
  *
  * Re-homing it here makes it version-controlled and playbook:check-enforced. This test is what
  * stops it going missing a second time.
  */
 it('composes the rules that must not silently disappear', function () {
-    $this->fakeProject(guidelinesBoostJson());
+    $this->fakeProject(boostJson());
 
     expect($this->renderedGuidelines())
         ->toContain('Every change ships with a test')
@@ -40,18 +28,25 @@ it('composes the rules that must not silently disappear', function () {
  * carrying every other section but missing this one must still read as stale.
  */
 it('reports STALE when an agent file predates the test rule', function () {
-    $dir = $this->fakeProject(guidelinesBoostJson());
+    $dir = $this->fakeProject(boostJson());
+    $rendered = $this->renderedGuidelines();
+
+    // Positive control first. Without it this test cannot tell "stale because the
+    // rule is missing" from "stale for any reason at all" — a change to
+    // resolvePath(), to normalise(), or to where Boost writes CLAUDE.md would each
+    // produce the exit code below while proving nothing.
+    file_put_contents($dir.'/CLAUDE.md', boostBlock($rendered));
+    $this->artisan('playbook:check')->assertExitCode(CheckCommand::OK);
 
     $withoutTheRule = str_replace(
         'Every change ships with a test',
         'Some heading that is not ours',
-        $this->renderedGuidelines()
+        $rendered
     );
 
-    file_put_contents(
-        $dir.'/CLAUDE.md',
-        "<laravel-boost-guidelines>\n".$withoutTheRule."\n\n</laravel-boost-guidelines>\n"
-    );
+    file_put_contents($dir.'/CLAUDE.md', boostBlock($withoutTheRule));
 
-    $this->artisan('playbook:check')->assertExitCode(1);
+    $this->artisan('playbook:check')
+        ->assertExitCode(CheckCommand::STALE)
+        ->expectsOutputToContain('behind jiannius/playbook');
 });
