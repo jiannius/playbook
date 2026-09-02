@@ -18,6 +18,7 @@ format and adds only the enforcement Boost lacks. See
 | **`playbook:check`** | The CI gate. Fails the build when a repo's agent files are stale |
 | **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v0` |
 | **Hooks** | Claude Code hook definitions, rendered into `.claude/settings.json` |
+| **Adoption** | [`docs/adopting.md`](docs/adopting.md) — six steps to put an existing app on the standard, and the traps real repos actually had |
 | **The map** | This README — where each piece of the system lives and why |
 | **Onboarding** | `ONBOARDING.md` — what to do in your first hour |
 
@@ -134,7 +135,9 @@ in the record: a job that dies that fast, before checkout, is a billing state an
 package, not just the skeleton; paste the org instructions; then hooks and the
 `permissions.deny` render target.
 
-`ONBOARDING.md`, listed in the map above, is not written yet.
+[`docs/adopting.md`](docs/adopting.md) is written and verified against the first host app: it is the
+repo-facing guide, six steps with the pre-flight commands that decide the inputs. `ONBOARDING.md` —
+the *person*-facing one, what to do in your first hour — is still not written.
 
 New teammate? Start with *How We Stay Aligned* — the four repos, what each is for, and what to
 do day to day whether or not you write code:
