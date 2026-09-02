@@ -12,7 +12,7 @@ function boostJson(array $overrides = []): array
         'guidelines' => true,
         'packages' => ['jiannius/playbook'],
         'mcp' => false,
-        'skills' => [],
+        'skills' => ['jiannius-dev', 'jiannius-qa-tester'],
     ], $overrides);
 }
 

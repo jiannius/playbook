@@ -15,7 +15,7 @@ format and adds only the enforcement Boost lacks. See
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
-| **`playbook:check`** | The CI gate. Fails the build when a repo's agent files are stale |
+| **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills have drifted, and when they are gitignored so a clone would never see them |
 | **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v0` |
 | **Hooks** | Claude Code hook definitions, rendered into `.claude/settings.json` |
 | **The map** | This README — where each piece of the system lives and why |

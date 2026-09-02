@@ -102,11 +102,22 @@ Behaviour:
 
 - Compose the guidelines in memory via Boost's `GuidelineComposer`.
 - Compare against each enabled agent's `guidelines_path` on disk.
+- Verify the **skills** too, per enabled agent, at that agent's own `skillsPath()`: installed at
+  all, byte-identical to the packaged source, and **reachable by a clone** — matched by a
+  `.gitignore` rule and untracked means Boost writes it and git throws it away.
 - Exit `0` — every file matches what Boost would produce now.
 - Exit `1` — any file stale. Print the diff and the remedy: `run boost:update and commit`.
-- Exit `2` — the check itself failed (unreadable config, missing Boost). Distinct from `1` so CI
-  can tell "out of date" from "broken".
+- Exit `2` — the check itself failed (unreadable config, missing Boost), **or the repo is
+  configured so the skills can never arrive**: no `skills` list in `boost.json`, or an ignored and
+  untracked skills path. Distinct from `1` because `boost:update` cannot fix either one.
 - Writes nothing, under any circumstance.
+
+The skills half was added after the first host app was surveyed: it had `/.claude` in its
+`.gitignore`, which means every skill Boost installs there is discarded on commit and a teammate
+who clones gets none of them. Nothing reported that — not `boost:update`, which succeeds, and not
+this command, which only looked at agent files. Ignored *and tracked* is accepted, because a
+force-added file is committed whatever the pattern says, and a false alarm there teaches people to
+stop reading the check.
 
 This ships in the reusable workflow in this same repo, which is why the two live together: the
 check and the thing it checks can never disagree about the format.
@@ -272,7 +283,9 @@ that state today: `packages` names `jiannius/atom`, and there is no `skills` key
 
 So the skeleton wiring is two edits, not one: add `jiannius/playbook` to `packages`, **and** seed a
 non-empty `skills` list (or make "run `boost:install` and tick Agent Skills" an onboarding step).
-Worth a `playbook:check` guard later — the same failure is invisible in every repo it hits.
+
+**`playbook:check` now guards this**, exit `2`, because the failure is otherwise invisible in every
+repo it hits: the guidelines arrive and look right while the skills silently never do.
 
 **Authoring constraint: no `#` comments inside fenced code blocks in a `SKILL.md`.**
 `SkillWriter::copyFile()` pushes every `.md` through `MarkdownFormatter::format()`, so what lands

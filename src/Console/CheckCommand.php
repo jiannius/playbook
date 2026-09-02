@@ -7,6 +7,7 @@ namespace Jiannius\Playbook\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Laravel\Boost\Contracts\SupportsGuidelines;
+use Laravel\Boost\Contracts\SupportsSkills;
 use Laravel\Boost\Install\Agents\Agent;
 use Laravel\Boost\Install\AgentsDetector;
 use Laravel\Boost\Install\GuidelineComposer;
@@ -15,7 +16,7 @@ use Laravel\Boost\Support\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
-#[AsCommand('playbook:check', 'Verify this repo\'s agent files carry the current Jiannius playbook guidelines')]
+#[AsCommand('playbook:check', 'Verify this repo\'s agent files and installed skills match the current Jiannius playbook')]
 class CheckCommand extends Command
 {
     /** @var string */
@@ -87,20 +88,198 @@ class CheckCommand extends Command
             );
         }
 
-        if ($stale->isEmpty()) {
+        // Guidelines are half of what this package delivers. The skills are the half that
+        // reaches a teammate who never runs composer, and nothing verified them until a
+        // repo turned up with .claude/ in its .gitignore.
+        $skills = $this->checkSkills($config, $detector);
+
+        if ($skills['broken'] !== []) {
+            $this->newLine();
+            $this->components->error('The skills this package ships cannot reach this repo.');
+            $this->components->bulletList($skills['broken']);
+
+            return self::BROKEN;
+        }
+
+        if ($stale->isEmpty() && $skills['stale'] === []) {
             return self::OK;
         }
 
         $this->newLine();
-        $this->components->error(sprintf('%d agent file(s) are behind %s.', $stale->count(), self::PACKAGE));
 
-        if ($this->option('diff')) {
-            $this->showExpected($expected);
+        if ($stale->isNotEmpty()) {
+            $this->components->error(sprintf('%d agent file(s) are behind %s.', $stale->count(), self::PACKAGE));
+
+            if ($this->option('diff')) {
+                $this->showExpected($expected);
+            }
+        }
+
+        if ($skills['stale'] !== []) {
+            $this->components->error(sprintf('%d installed skill(s) are behind %s.', count($skills['stale']), self::PACKAGE));
+            $this->components->bulletList($skills['stale']);
         }
 
         $this->components->bulletList(['Fix: run [php artisan boost:update] and commit the result.']);
 
         return self::STALE;
+    }
+
+    /**
+     * Verify the skills half of the delivery: installed, faithful to the source, and
+     * reachable by someone who only ever clones this repo.
+     *
+     * @return array{broken: list<string>, stale: list<string>}
+     */
+    protected function checkSkills(Config $config, AgentsDetector $detector): array
+    {
+        $shipped = $this->shippedSkills();
+
+        if ($shipped === []) {
+            return [
+                'broken' => [sprintf('%s ships no skills. Is resources/boost/skills/ present in the installed package?', self::PACKAGE)],
+                'stale' => [],
+            ];
+        }
+
+        $agents = $this->skillAgents($config, $detector);
+
+        // Every agent Boost knows implements SupportsSkills, each with its own directory
+        // (.claude/skills; .agents/skills for Codex, OpenCode, Amp, Zed; .github/skills
+        // for Copilot), so a repo with two agents enabled has two places the skills have
+        // to land. This guard covers the case where the configured list resolves to no
+        // agent at all, which the guidelines check above already reports.
+        if ($agents->isEmpty()) {
+            return ['broken' => [], 'stale' => []];
+        }
+
+        // The trap worth failing loudly for: boost.json names this package under
+        // "packages" but carries no "skills" list, so boost:update composes the
+        // guidelines and installs no skills — on every run, forever, reporting success
+        // each time. Invisible in every repo it hits.
+        if (! $config->hasSkills()) {
+            return [
+                'broken' => [
+                    'boost.json has no "skills" list, so [boost:update] installs no skills at all — and still reports success.',
+                    'Fix: run [php artisan boost:install] and tick Agent Skills, or add the skill names to "skills" in boost.json.',
+                ],
+                'stale' => [],
+            ];
+        }
+
+        $broken = [];
+        $stale = [];
+
+        foreach ($agents as $agent) {
+            foreach ($shipped as $name => $source) {
+                $target = base_path($agent->skillsPath().DIRECTORY_SEPARATOR.$name.DIRECTORY_SEPARATOR.'SKILL.md');
+                $label = $agent->displayName().' <fg=gray>'.$this->relativePath($target).'</>';
+                $shown = $this->relativePath($target);
+
+                if (! is_file($target)) {
+                    $stale[] = $shown.' is not installed.';
+                    $this->components->twoColumnDetail($label, '<fg=red>MISSING</>');
+
+                    continue;
+                }
+
+                $installed = (string) file_get_contents($target);
+                $packaged = (string) file_get_contents($source);
+
+                if ($installed !== $packaged) {
+                    $stale[] = sprintf(
+                        '%s differs from the packaged source (installed %d bytes, packaged %d).',
+                        $shown,
+                        strlen($installed),
+                        strlen($packaged)
+                    );
+                    $this->components->twoColumnDetail($label, '<fg=red>STALE</>');
+
+                    continue;
+                }
+
+                if ($this->isUnreachableByClone($target)) {
+                    $broken[] = sprintf('%s is gitignored and untracked — Boost writes it, git discards it, and a teammate who clones this repo gets nothing.', $shown);
+                    $broken[] = 'Fix: stop ignoring '.$this->relativePath(base_path($agent->skillsPath())).' — ignore only the per-person files under it — then commit the skills.';
+                    $this->components->twoColumnDetail($label, '<fg=red>IGNORED</>');
+
+                    continue;
+                }
+
+                $this->components->twoColumnDetail($label, '<fg=green>current</>');
+            }
+        }
+
+        return ['broken' => $broken, 'stale' => $stale];
+    }
+
+    /**
+     * The skills this package ships, read from the installed package rather than from
+     * Boost's discovery. The question here is what *we* deliver, and the source file is
+     * also the thing the installed copy has to match byte for byte.
+     *
+     * @return array<string, string> skill name => absolute path to its SKILL.md
+     */
+    protected function shippedSkills(): array
+    {
+        $skills = [];
+
+        foreach (glob(dirname(__DIR__, 2).'/resources/boost/skills/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            if (is_file($dir.'/SKILL.md')) {
+                $skills[basename($dir)] = $dir.'/SKILL.md';
+            }
+        }
+
+        return $skills;
+    }
+
+    /**
+     * @return Collection<int, Agent&SupportsSkills>
+     */
+    protected function skillAgents(Config $config, AgentsDetector $detector): Collection
+    {
+        $selected = $config->getAgents();
+
+        return $detector->getAgents()
+            ->filter(fn (Agent $agent): bool => in_array($agent->name(), $selected, true))
+            ->filter(fn (Agent $agent): bool => $agent instanceof SupportsSkills)
+            ->values();
+    }
+
+    /**
+     * True when git would discard this file: matched by an ignore rule and not already
+     * tracked. Tracked wins — a force-added file is committed whatever the pattern says,
+     * and reporting that would be a false alarm.
+     *
+     * False whenever the answer cannot be established (no repository, no git binary): a
+     * check that cannot see the repo must not fail the build.
+     */
+    protected function isUnreachableByClone(string $path): bool
+    {
+        if (! file_exists(base_path('.git'))) {
+            return false;
+        }
+
+        if ($this->git(['check-ignore', '-q', '--', $path]) !== 0) {
+            return false;
+        }
+
+        return $this->git(['ls-files', '--error-unmatch', '--', $path]) !== 0;
+    }
+
+    /**
+     * @param  list<string>  $args
+     */
+    protected function git(array $args): int
+    {
+        $command = 'git -C '.escapeshellarg(base_path()).' '
+            .implode(' ', array_map('escapeshellarg', $args)).' 2>&1';
+
+        $code = 0;
+        $output = [];
+        exec($command, $output, $code);
+
+        return $code;
     }
 
     /**

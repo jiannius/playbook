@@ -10,7 +10,9 @@ function guidelinesBoostJson(): array
         'guidelines' => true,
         'packages' => ['jiannius/playbook'],
         'mcp' => false,
-        'skills' => [],
+        // Non-empty on purpose: an empty list is its own failure now (boost:update
+        // installs no skills at all), and this fixture is about the guidelines half.
+        'skills' => ['jiannius-dev', 'jiannius-qa-tester'],
     ];
 }
 
