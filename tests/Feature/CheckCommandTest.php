@@ -4,24 +4,6 @@ declare(strict_types=1);
 
 use Jiannius\Playbook\Console\CheckCommand;
 
-/** A boost.json that has Boost set up and playbook enabled. */
-function boostJson(array $overrides = []): array
-{
-    return array_merge([
-        'agents' => ['claude_code'],
-        'guidelines' => true,
-        'packages' => ['jiannius/playbook'],
-        'mcp' => false,
-        'skills' => ['jiannius-dev', 'jiannius-qa-tester'],
-    ], $overrides);
-}
-
-/** Wrap text the way Boost's GuidelineWriter does. */
-function boostBlock(string $inner): string
-{
-    return "<laravel-boost-guidelines>\n".$inner."\n\n</laravel-boost-guidelines>\n";
-}
-
 it('reports BROKEN when boost is not set up', function () {
     $this->fakeProject(boostJson: null);
 
