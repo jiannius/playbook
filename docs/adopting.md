@@ -18,6 +18,7 @@ composer audit --locked --format=summary
 git check-ignore -v .claude/skills 2>/dev/null || echo 'not ignored — good'
 git branch -a | grep -E '(^|/)dev$' || echo 'no dev branch'
 ls tests/Browser 2>/dev/null || echo 'no browser tests'
+grep -A1 '"laravel/boost"' composer.lock | head -2
 ```
 
 | What you see | What it means |
@@ -27,24 +28,38 @@ ls tests/Browser 2>/dev/null || echo 'no browser tests'
 | `.claude/skills` is ignored | Step 3 is not optional for you. This is the most common finding |
 | No `dev` branch | Pass `base-branch: main` in step 5 |
 | `tests/Browser` exists | Pass `browser-tests: true`, or the suite dies on `PlaywrightNotInstalledException` |
+| `laravel/boost` locked below 2.4.7 | Step 1's `-W` is doing real work; without it you get an older playbook |
 
 ## 1. Install the package
 
 ```bash
-composer require --dev jiannius/playbook
+composer require --dev jiannius/playbook -W
 ```
 
-Boost arrives with it — playbook requires `laravel/boost` itself, and pins the version for the whole
-fleet. If your `composer.json` also names `laravel/boost` in `require-dev`, **remove it**: two root
-constraints on the same package means this repo, not playbook, decides which Boost you are on.
+**The `-W` is required, not tidiness.** `composer require` does a *partial* update and cannot move a
+package already pinned in your `composer.lock`. If `laravel/boost` is locked below 2.4.7 — the first
+host app was on 2.4.6 — composer resolves the newest playbook that tolerates *your* Boost instead of
+telling you anything. Dry-run on that repo, the difference is silent:
+
+```
+without -W:   Locking jiannius/playbook (v0.2.2)   Installing laravel/boost (v2.4.6)
+with -W:      Locking jiannius/playbook (v0.2.3)   Upgrading laravel/boost (v2.4.6 => v2.7.0)
+```
+
+You would get an older playbook, miss everything released after it, and keep the Boost version whose
+`SkillWriter` drops the trailing newline from every skill it installs — leaving the installed copy as
+the packaged one minus its last byte, which `playbook:check` then reports as stale on every run.
+
+`-W` moves Boost and what Boost requires. It is not a blanket update of your tree.
+
+Boost arrives with the package — playbook requires `laravel/boost` itself, and pins the version for
+the whole fleet. If your `composer.json` also names `laravel/boost` in `require-dev`, **remove it**
+first: two root constraints on the same package means this repo, not playbook, decides which Boost
+you are on.
 
 ```bash
-composer remove --dev laravel/boost --no-update && composer update --lock
+composer remove --dev laravel/boost --no-update
 ```
-
-Expect Boost to move to at least **2.4.7**. Below that version `SkillWriter` drops the trailing
-newline from every skill it installs, so the installed copy is the packaged one minus its last byte
-— and `playbook:check` will tell you so.
 
 ## 2. Enable it in `boost.json`
 
