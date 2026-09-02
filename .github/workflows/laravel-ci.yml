@@ -73,6 +73,13 @@ on:
         description: Run playbook:check. Set false for repos not yet onboarded to jiannius/playbook.
         type: boolean
         default: true
+      check-secrets:
+        description: >-
+          Scan the working tree for committed secrets with gitleaks. A hit means
+          rotate the credential — silencing the check is not the fix. Off only
+          while a repo is mid-remediation.
+        type: boolean
+        default: true
       check-audit:
         description: >-
           Fail on a HIGH or CRITICAL composer advisory. Lower severities are
@@ -134,6 +141,56 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      # First, unlike the advisory gate at the end of this file, and deliberately.
+      # A live credential in the repo is the most important fact about the run, and
+      # nothing later is worth knowing until it is dealt with. Costs a few seconds
+      # and needs no PHP.
+      #
+      # The binary, not gitleaks-action: the action requires a paid GITLEAKS_LICENSE
+      # for organizations, and the CLI it wraps is Apache-2.0. We pay nothing for CI
+      # and intend to keep it that way.
+      - name: Secret scan
+        if: inputs.check-secrets
+        env:
+          # Pinned, not latest: a scanner that moves under you turns an unrelated PR
+          # red for a rule nobody in this repo added.
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          set -euo pipefail
+
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+
+          # Scan what git TRACKS, not what happens to be sitting on disk. Pointing
+          # gitleaks at the working directory reads vendor/, storage/logs, .env and
+          # any local worktree: on the first host app that produced 195 findings,
+          # every one of them in a file git never sees. Exporting the index gives the
+          # same answer in CI and on a laptop, whatever else is lying around — and it
+          # scans a secret that is actually committed, which is the one a clone gets.
+          # checkout-index exports the INDEX. After a fresh checkout that is exactly
+          # HEAD, which is the tree a clone gets. Run by hand on a dirty laptop it
+          # scans what is staged, not what is merely saved — worth knowing before
+          # concluding the check missed something.
+          scan="$(mktemp -d)"
+          git checkout-index -a --prefix="${scan}/"
+
+          # Agent-managed skill directories arrive from composer packages via
+          # boost:update; nobody hand-writes them. Boost's own laravel-best-practices
+          # skill carries a "committed to the repo" example — STRIPE_SECRET=sk_live_abc123
+          # — which trips generic-api-key, so scanning these would fail every repo in
+          # the fleet over upstream's illustration of the very rule we are enforcing.
+          rm -rf "${scan}/.claude/skills" "${scan}/.agents/skills" \
+                 "${scan}/.github/skills" "${scan}/.cursor/skills" \
+                 "${scan}/.junie/skills" "${scan}/.kiro/skills"
+
+          # A repo tunes the rest with its own .gitleaks.toml (rules) or .gitleaksignore
+          # (individual findings). Both are tracked, so both land in the export and
+          # gitleaks reads them from there.
+          #
+          # --redact is not optional: without it a finding prints the credential into
+          # a CI log that far more people can read than the file it came from.
+          /tmp/gitleaks dir "${scan}" --no-banner --redact --exit-code 1
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
