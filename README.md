@@ -116,17 +116,19 @@ for delivery and enforcement. Against it:
 `resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
 `composer require --dev jiannius/playbook` resolves.
 
-**In review** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the package, names
-it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`, and swaps its
-`tests.yml` for a call into `laravel-ci.yml@v0`. That is the first end-to-end run of the delivery
-chain outside Testbench fixtures — and the first repo whose `dev` branch exists, which the
-base-ref guard has always assumed.
+**Verified end to end** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the
+package, names it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`,
+and swaps its `tests.yml` for a call into `laravel-ci.yml@v0`. On 2026-09-02 that call went green
+in a private repo — pint, `migrate:fresh --seed` from empty on MySQL 8.0, 39 tests / 91 assertions
+including the Chromium browser suite, and `playbook:check` reporting the guidelines current. First
+run of the delivery chain outside Testbench fixtures, and the first repo whose `dev` branch exists,
+which the base-ref guard has always assumed. Awaiting review, not evidence.
 
-**Blocked, and not on us** — no GitHub Actions runner will accept a job in a *private* org repo:
-*"recent account payments have failed or your spending limit needs to be increased"*. The jobs are
-created, assigned nothing, and fail in two seconds. Public repos are unmetered, so playbook's own
-CI is unaffected; the skeleton's is dead until org billing is settled. Every check in this system
-passes locally in the meantime.
+**Unblocked** — the GitHub Actions billing stop cleared on 2026-09-02. While it held, no runner
+would accept a job in a *private* org repo: *"recent account payments have failed or your spending
+limit needs to be increased"*. Jobs were created, assigned nothing, and failed in two seconds
+having run no steps. Public repos are unmetered, so playbook's own CI never saw it. Worth keeping
+in the record: a job that dies that fast, before checkout, is a billing state and not a code result.
 
 **Next, in order** — merge the skeleton wiring; retire the two marketplace copies once repos have
 installed the package; paste the org instructions; then hooks and the `permissions.deny` render
