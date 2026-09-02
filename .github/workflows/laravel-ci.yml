@@ -104,11 +104,24 @@ jobs:
     steps:
       # A step, not a job. As a job this cost a whole billed minute to compare
       # two strings; as a step it is free and fails just as fast.
+      #
+      # `github.base_ref` comes from the event payload, NOT from live PR state,
+      # and retargeting a PR fires `pull_request: edited` — not one of the
+      # default trigger types. So changing the base produces no new run, and the
+      # run already on the PR keeps reporting the base it was created with. A
+      # correctly-targeted PR can therefore sit under a red guard indefinitely.
+      #
+      # Re-running does NOT clear it: a re-run replays the original payload, so
+      # the guard reads the same stale base again. It takes a fresh event —
+      # push a commit (`synchronize`), or `gh pr close N && gh pr reopen N`
+      # (`reopened`). Confirm the fix by checking this step reports `skipped`.
       - name: Pull request must target ${{ inputs.base-branch }}
         if: github.event_name == 'pull_request' && github.base_ref != inputs.base-branch
         run: |
           echo "::error::This PR targets '${{ github.base_ref }}' but the integration branch is '${{ inputs.base-branch }}'."
-          echo "Retarget the pull request, then push again."
+          echo "Retarget the pull request, then re-trigger with a fresh event:"
+          echo "  push a commit, or close and reopen the PR."
+          echo "Re-running this workflow will NOT help - it replays the original payload."
           exit 1
 
       - name: Checkout
