@@ -170,7 +170,7 @@ Four files in `.github/workflows/`. Consumers **call** them, never copy them.
 | `laravel-ci.yml` | `workflow_call` | Applications. Jobs: `guard` (base-ref) and `ci` |
 | `package-ci.yml` | `workflow_call` | Packages — Testbench, no artisan. Matrixes lowest/highest deps |
 | `ci.yml` | push + PR | playbook's own CI, calling `package-ci.yml` — dogfooding |
-| `tag-major.yml` | `v*.*.*` tag push | Moves the `v1` tag to the new release |
+| `major-ref.yml` | `v*.*.*` tag push | Moves the `v1` **branch** to the new release |
 
 ```yaml
 jobs:
@@ -224,9 +224,20 @@ Two consequences worth knowing:
   sqlite. Those are real bugs rather than CI noise — though a repo mid-migration can set
   `database: sqlite` to defer them.
 
-**`tag-major.yml` is the ladder applied to ourselves.** Consumers pin a major tag while composer
-resolves semver, so every release needs two tags and the moving one is exactly what a person
+**`major-ref.yml` is the ladder applied to ourselves.** Consumers pin a major ref while composer
+resolves semver, so every release needs two refs and the moving one is exactly what a person
 forgets. It is not written as a rule anywhere; it is a workflow that fires on the semver tag.
+
+**It moves a branch, not a tag, and the distinction is load-bearing.** This repo is a composer
+package *and* a provider of reusable workflows, and a moving `v0` tag serves the second while
+breaking the first. Packagist reads any tag that parses as a version — `v0` parses, as the stable
+version `0.0.0.0` — and stable versions there are immutable by policy, so that a published release
+cannot silently swap its contents under the people who installed it. Every re-tag was therefore
+rejected with *"an attempted update to version v0 blocked"*, and the package-side `v0` sat frozen at
+the first commit it ever pointed at until it lost its source and dist references altogether. The git
+tag moved regardless, so `uses: ...@v0` was always correct; only the composer view was wrong. A
+branch is the honest shape for a ref meant to move: Packagist maps it to a mutable dev version, and
+GitHub resolves `@v0` for a branch exactly as for a tag, so no consumer changes a line.
 
 ### 2. Skills — built
 

@@ -1,0 +1,66 @@
+name: move major ref
+
+# Consumers pin reusable workflows with a major ref such as `@v0`, but composer
+# resolves semver. That means every release needs two refs, and the moving one is
+# exactly the kind of step a person forgets. So it is not a rule — it is this file.
+#
+# Push v1.4.2 and the v1 branch follows it here.
+#
+# ---------------------------------------------------------------------------
+# WHY A BRANCH AND NOT A TAG.
+#
+# This repo is two things at once: a composer package and a provider of reusable
+# workflows. A moving `v0` **tag** serves the second and breaks the first.
+#
+# Packagist reads every tag that parses as a version. `v0` parses — as the stable
+# version 0.0.0.0 — and stable versions on Packagist are immutable by policy, so
+# that a published release cannot silently swap its contents underneath the people
+# who installed it. Which is correct, and which means every re-tag we pushed was
+# rejected:
+#
+#   "an attempted update to version v0 blocked, because a published stable
+#    version's source/dist reference changed in your git repository"
+#
+# The git tag moved regardless, so `uses: …@v0` was always right; the damage was
+# on the composer side, where version v0 sat frozen at the first commit it ever
+# pointed at and eventually lost its source and dist references altogether.
+#
+# A branch is the honest shape for a ref that is supposed to move. Packagist maps
+# it to a dev version, which is mutable and carries no immutability promise, and
+# GitHub resolves `@v0` for a branch exactly as it does for a tag — so no consumer
+# has to change a line.
+#
+# Real releases stay tags (v0.2.4), stable and immutable, which is what composer
+# constraints actually resolve against.
+# ---------------------------------------------------------------------------
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Point the major branch at this release
+        run: |
+          set -euo pipefail
+          full="${GITHUB_REF_NAME}"
+          major="${full%%.*}"          # v1.4.2 -> v1
+
+          echo "Moving branch ${major} to ${full} (${GITHUB_SHA})"
+
+          # --force because the branch is an alias, not a line of development:
+          # it is expected to jump to whatever commit the newest release tagged,
+          # which is rarely a fast-forward from where it sat.
+          git push origin "${GITHUB_SHA}:refs/heads/${major}" --force
