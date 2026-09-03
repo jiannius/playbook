@@ -32,6 +32,27 @@ support, who never open a repo and are the people those rules mostly serve.
 If you are writing anything client-facing and unsure which product a piece of work belongs to,
 check there rather than guessing.
 
+**If this repo implements a product, its README opens by naming that product and saying in a
+sentence what it is.** The organisation instructions carry only the index of what exists — what
+each product is called. Everything past the name is this README's job, because it is the copy the
+people building the product own, and the only one that cannot drift from the thing it describes.
+
+**Write it for someone reading it on github.com who will never clone this repo.** Most of the
+people who need to know what a product is called and what it does are in sales, marketing or
+support. They will open the README in a browser, not a terminal, and the answer has to be in the
+first screen — above the install steps, before any command they will not run. A README that
+explains the product only by way of setting it up has not answered the question.
+
+Two failures make this worth stating rather than assuming. A repo name is not a product name:
+`apikan` is a repo, **APIkan** is the product, and handing a client the repo name is a mistake
+that has already happened. And a repo whose README is still the framework's default tells a
+reader nothing at all — "About Laravel" is not an answer to "what is this".
+
+Keep it current through a rename, and name the old product name while it is still in circulation
+rather than deleting it. A retired name goes on appearing in client documents and in habits long
+after the code moves, and a reader who cannot connect the old name to the new product is worse
+off than one who never saw either.
+
 ### Some rules are in both places on purpose
 
 The mirror of the above is also true: **the guardrails at the top of this file — production,
