@@ -32,6 +32,24 @@ support, who never open a repo and are the people those rules mostly serve.
 If you are writing anything client-facing and unsure which product a piece of work belongs to,
 check there rather than guessing.
 
+### Some rules are in both places on purpose
+
+The mirror of the above is also true: **the guardrails at the top of this file — production,
+secrets and customer data, when you are unsure — appear in the organisation instructions too**,
+in a shorter form with the repo-specific clauses taken out. That is deliberate. Do not resolve it
+by deleting either copy.
+
+Composer is repo-scoped, so this file never loads for a teammate working with no checkout in front
+of them, and the organisation instructions are the only surface that can carry a customer-data rule
+to the person answering a support ticket. Two copies of a rule is normally the exact problem this
+package exists to prevent — here it is the price of two audiences that no single channel reaches.
+
+The split is made **clause by clause, not rule by rule**, by asking whether a given sentence means
+anything to someone with no repo. "Never expose customer personal data" means something to
+everyone. "Migrations and seeders run against local only" does not, so it appears here and nowhere
+else. When the two versions differ in detail, the fuller one is the one you are reading; the
+shorter one drops what is meaningless outside a repo, never to soften a rule.
+
 ### Every change ships with a test
 
 Write or update a test for the change, then run it before you call the work done. If something
