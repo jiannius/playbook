@@ -43,6 +43,14 @@ support. They will open the README in a browser, not a terminal, and the answer 
 first screen — above the install steps, before any command they will not run. A README that
 explains the product only by way of setting it up has not answered the question.
 
+**Give the product's public URL there too**, on the same first screen. It is the one place
+everyone is sent for it, so if the README omits it there is nowhere else to look — and the
+failure mode is not a missing answer, it is an invented one. Nobody should ever infer a domain:
+a domain that resolves is owned by *someone*, which is no evidence it is ours. Where a URL is
+genuinely not settled yet, write that it is not settled. When you need a product's URL or full
+name and its README does not give it, use the plain product name and say the detail is not
+recorded, rather than reaching for something that looks right.
+
 Two failures make this worth stating rather than assuming. A repo name is not a product name:
 `apikan` is a repo, **APIkan** is the product, and handing a client the repo name is a mistake
 that has already happened. And a repo whose README is still the framework's default tells a
