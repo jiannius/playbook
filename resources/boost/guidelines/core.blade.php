@@ -53,8 +53,14 @@ recorded, rather than reaching for something that looks right.
 
 Two failures make this worth stating rather than assuming. A repo name is not a product name:
 `apikan` is a repo, **APIkan** is the product, and handing a client the repo name is a mistake
-that has already happened. And a repo whose README is still the framework's default tells a
-reader nothing at all — "About Laravel" is not an answer to "what is this".
+that has already happened.
+
+And a README can be genuinely good and still never answer the question. Ours mostly are: they
+open with the framework's scaffolded logo, badges and "About Laravel", then go straight to
+running the thing — install, queues, timeouts, which box it deploys to. All of that is worth
+having. None of it says what the product *is*, and the twenty-odd lines of someone else's
+marketing at the top push the parts that do matter below the first screen. Delete the scaffold
+and start with your own first sentence.
 
 Keep it current through a rename, and name the old product name while it is still in circulation
 rather than deleting it. A retired name goes on appearing in client documents and in habits long
