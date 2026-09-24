@@ -109,8 +109,17 @@ php artisan boost:update
 php artisan playbook:check     # expect: exit 0
 ```
 
-Then commit both halves — `CLAUDE.md` (or `AGENTS.md`, per your enabled agents) **and**
-`.claude/skills/`.
+Then commit both halves — the agent files **and** `.claude/skills/`.
+
+On **Boost 2.10 or later** the guidelines go to `AGENTS.md` for every agent, Claude Code included.
+Claude Code skips `AGENTS.md` whenever a `CLAUDE.md` exists, so make the one-time move:
+
+1. Move the repo's own constitution from `CLAUDE.md` to **below** the managed block in `AGENTS.md`.
+2. Replace the whole of `CLAUDE.md`, old guidelines block included, with the single line `@AGENTS.md`.
+
+`playbook:check` exits 2 until both are done. On Boost before 2.10 skip this — Claude Code's
+guidelines still go to `CLAUDE.md`. The reason is recorded in
+[`playbook-install.md`](playbook-install.md#changed-in-boost-210-2026-09-24).
 
 What the exit codes mean:
 
@@ -118,7 +127,7 @@ What the exit codes mean:
 |---|---|---|
 | 0 | Everything current | — |
 | 1 | Stale: agent file behind, or an installed skill missing or drifted | `boost:update`, commit |
-| 2 | Misconfigured: no `skills` list, ignored skills path, Boost not set up | Steps 2 and 3. `boost:update` cannot fix this |
+| 2 | Misconfigured: no `skills` list, ignored skills path, Boost not set up, or `CLAUDE.md` not importing `AGENTS.md` | Steps 2–4. `boost:update` cannot fix this |
 
 ## 5. Call the shared CI
 

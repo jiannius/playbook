@@ -79,6 +79,15 @@ class CheckCommand extends Command
             return self::BROKEN;
         }
 
+        $unloaded = $this->claudeLoadProblems($agents);
+
+        if ($unloaded !== []) {
+            $this->components->error('Claude Code will not load the guidelines Boost writes.');
+            $this->components->bulletList($unloaded);
+
+            return self::BROKEN;
+        }
+
         $stale = $agents->reject(fn (Agent&SupportsGuidelines $agent): bool => $this->isCurrent($agent, $expected));
 
         foreach ($agents as $agent) {
@@ -319,6 +328,39 @@ class CheckCommand extends Command
             ->filter(fn (Agent $agent): bool => in_array($agent->name(), $selected, true))
             ->filter(fn (Agent $agent): bool => $agent instanceof SupportsGuidelines)
             ->values();
+    }
+
+    /**
+     * Boost 2.10 writes Claude Code's guidelines to AGENTS.md, but Claude Code only loads
+     * AGENTS.md when there is no CLAUDE.md — and every Jiannius repo has one. Without an import,
+     * boost:update keeps AGENTS.md current while Claude reads whatever CLAUDE.md last held, and
+     * the staleness check above would pass, because AGENTS.md really is current.
+     *
+     * @param  Collection<int, Agent&SupportsGuidelines>  $agents
+     * @return list<string>
+     */
+    protected function claudeLoadProblems(Collection $agents): array
+    {
+        $claude = $agents->first(fn (Agent $agent): bool => $agent->name() === 'claude_code');
+        $claudeMd = base_path('CLAUDE.md');
+
+        if ($claude === null || $this->resolvePath($claude->guidelinesPath()) === $claudeMd || ! is_file($claudeMd)) {
+            return [];
+        }
+
+        $target = $claude->guidelinesPath();
+        $content = (string) file_get_contents($claudeMd);
+        $problems = [];
+
+        if (preg_match('/^@'.preg_quote($target, '/').'[ \t]*$/m', $content) !== 1) {
+            $problems[] = sprintf('CLAUDE.md does not import %1$s, and Claude Code never loads %1$s while CLAUDE.md exists. Fix: add the line [@%1$s] to CLAUDE.md.', $target);
+        }
+
+        if (preg_match(self::BLOCK, $content) === 1) {
+            $problems[] = sprintf('CLAUDE.md still holds a guidelines block that boost:update no longer rewrites. Fix: delete it; %s carries the current one.', $target);
+        }
+
+        return $problems;
     }
 
     /** @param  Collection<string, string>  $expected */

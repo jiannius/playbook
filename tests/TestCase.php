@@ -47,6 +47,13 @@ abstract class TestCase extends BaseTestCase
             json_encode(['require-dev' => ['jiannius/playbook' => '*']], JSON_PRETTY_PRINT)
         );
 
+        // Boost 2.10+ lists installed packages from composer.lock, not composer.json, so a
+        // fixture without a lock file has no packages and composes no guidelines at all.
+        file_put_contents(
+            $dir.'/composer.lock',
+            json_encode(['packages' => [], 'packages-dev' => [['name' => 'jiannius/playbook', 'version' => 'dev-main']]], JSON_PRETTY_PRINT)
+        );
+
         // Point at the real package so Boost discovers the real guidelines.
         symlink(dirname(__DIR__), $dir.'/vendor/jiannius/playbook');
 
@@ -63,6 +70,11 @@ abstract class TestCase extends BaseTestCase
         }
 
         $this->app->setBasePath($dir);
+
+        // Boost 2.10 moved Claude Code's default from CLAUDE.md to AGENTS.md. Pin it so these
+        // fixtures mean the same thing on every Boost the package allows; the AGENTS.md layout
+        // has its own tests, which set this back explicitly.
+        config(['boost.agents.claude_code.guidelines_path' => 'CLAUDE.md']);
         $this->fakeProject = $dir;
 
         return $dir;
