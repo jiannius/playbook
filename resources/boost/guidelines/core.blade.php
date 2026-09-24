@@ -106,6 +106,34 @@ guarantee that anything ran. What CI can never do, however it is configured, is 
 does not exist**. Whether a change arrives with one is the part no check can decide for you, which
 is why it is written here rather than left to the pipeline.
 
+### Find the cause before you change the code
+
+When something is broken — a failing test, a user complaint, a bug reported on a PR — reproduce it
+first, then find out why it happens. Only then change code.
+
+- A fix you cannot connect to a cause is a guess. If the symptom stops and you cannot say why, say
+  exactly that; do not report it as fixed.
+- Change one thing at a time. Several speculative edits at once hide which one mattered and leave
+  the rest behind as noise in the diff.
+- If a few attempts have not found it, stop. Write down what you know and what you have ruled out,
+  and ask — the rule under *When you are unsure* applies.
+
+The failing test that proves the fix is the rule above, not a second one here.
+
+### Show the evidence before you call it done
+
+"Done", "fixed" and "passing" are claims, and each one needs the output that proves it, produced in
+this session after the last edit: the test run, the command and its result, the screenshot. A belief
+that it should work is not evidence, and neither is a run from before you changed something.
+
+What to do when something cannot be verified is the test rule's last clause above: say so plainly.
+
+### Plan before a change that spans many files
+
+For work that touches several files or will take more than one commit, write the plan first — what
+changes, in what order, and how each step will be verified — and get agreement before editing. A
+wrong direction caught in a plan costs a paragraph; caught in review, it costs the whole change.
+
 ### CI must stay inside the free allowance
 
 We pay nothing for GitHub Actions and intend to keep it that way. Private repos meter against a

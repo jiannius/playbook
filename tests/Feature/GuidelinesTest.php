@@ -18,6 +18,9 @@ it('composes the rules that must not silently disappear', function () {
 
     expect($this->renderedGuidelines())
         ->toContain('Every change ships with a test')
+        ->toContain('Find the cause before you change the code')
+        ->toContain('Show the evidence before you call it done')
+        ->toContain('Plan before a change that spans many files')
         ->toContain('Production is off-limits')
         ->toContain('Secrets and customer data')
         ->toContain('CI must stay inside the free allowance');
