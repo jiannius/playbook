@@ -84,6 +84,30 @@ Claude Code 2.1.247 does not read `AGENTS.md`:
 Boost's `ClaudeCode` agent handles this correctly by writing `CLAUDE.md` directly. No workaround
 needed.
 
+### Changed in Boost 2.10 (2026-09-24)
+
+`laravel/boost` 2.10 points **every** agent at `AGENTS.md`, `ClaudeCode` included —
+`config('boost.agents.claude_code.guidelines_path', 'AGENTS.md')` — and writes no `CLAUDE.md`
+at all. Claude Code does read `AGENTS.md` now (since 2.1.277), but only **when no `CLAUDE.md`
+exists**. Every Jiannius repo has one, so after upgrading Boost the guidelines land in a file
+Claude never loads, while the old block in `CLAUDE.md` stops being rewritten.
+
+The standard layout from 2.10 on:
+
+| File | Holds |
+|---|---|
+| `AGENTS.md` | The managed guidelines block, then the repo's own constitution below it. Every agent reads it |
+| `CLAUDE.md` | The single line `@AGENTS.md`, and no guidelines block of its own |
+
+`playbook:check` enforces it: when Claude Code's guidelines go anywhere but `CLAUDE.md` and a
+`CLAUDE.md` exists, it exits 2 unless that file imports the target and carries no leftover block.
+Without that, the staleness check would pass — `AGENTS.md` really is current — while Claude read
+a frozen copy. On Boost before 2.10 nothing changes.
+
+Two other 2.10 changes the tests had to absorb: package discovery now reads **`composer.lock`**
+(through `laravel/roster`), not `composer.json`, and counts only **direct** dependencies —
+`require-dev` included, so `jiannius/playbook` as a dev dependency is still found.
+
 ## What playbook *does* build
 
 Three gaps, in priority order.
