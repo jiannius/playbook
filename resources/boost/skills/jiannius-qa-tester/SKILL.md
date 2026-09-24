@@ -30,6 +30,17 @@ Ask the tester for the PR number (or branch) if not given. If they said "the pen
 gh pr list --state open
 ```
 
+Before switching branches, check the checkout is clean and note where it is:
+
+```bash
+git status
+git branch --show-current
+```
+
+- **Uncommitted changes → stop and ask the tester.** `git checkout` carries them onto the PR branch, so
+  you would be testing the PR plus their edits. Don't stash or discard them yourself.
+- **Remember the starting branch** — step 6 returns to it.
+
 Then, from the repo being tested:
 
 ```bash
@@ -51,6 +62,11 @@ php artisan migrate
 | `php artisan migrate` | Only if the PR adds migrations. **Local database only, never production** |
 
 - The app is served by **Herd** at `https://<project>.test` (always on). **Never run `php artisan serve`.** Get the exact URL from the repo's README.
+- **Test in the main checkout, not a worktree.** Herd serves the main checkout's folder at that URL, so
+  a worktree is not what the browser shows. A worktree also starts with no `vendor/`, `node_modules/`
+  or `.env`, and shares the local database unless it gets its own `DB_DATABASE`. Use one only when
+  the tester must keep their current checkout untouched — then `herd link` it to its own URL and
+  give it its own `DB_DATABASE`.
 - You need a **test organization / sample data** to exercise features. Use local dev data or seed it — **never production data.**
 - If a page looks unstyled or a change isn't visible, it's almost always a missing `npm run build` or a needed hard-refresh (assets are hashed).
 
@@ -94,6 +110,19 @@ Once a bug reproduces, you may do a **shallow read** of the code to pin the like
 ## 5. Sign off (when it passes)
 
 When the change works and looks right, the tester submits an **Approve** review on the PR (a short "Testing done" comment). That's the signal for the developer to proceed.
+
+## 6. Hand the checkout back
+
+Whether the PR passed or failed, leave the local app as you found it:
+
+```bash
+php artisan migrate:rollback --step=<N>
+git checkout <starting-branch>
+```
+
+Run the rollback only if step 1 ran the PR's migrations; `<N>` is how many it added. Roll back **before** switching branches — the PR's migration files are gone once you leave it, and
+the local schema would stay on the PR's version, so the next PR gets tested against the wrong database.
+Then `npm run build` again if the tester goes back to using the app on that branch.
 
 ---
 
