@@ -126,8 +126,7 @@ The failing test that proves the fix is the rule above, not a second one here.
 this session after the last edit: the test run, the command and its result, the screenshot. A belief
 that it should work is not evidence, and neither is a run from before you changed something.
 
-If part of the work could not be verified — nothing to run it against, a step skipped — name that
-part, rather than folding it into "done".
+What to do when something cannot be verified is the test rule's last clause above: say so plainly.
 
 ### Plan before a change that spans many files
 
