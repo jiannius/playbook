@@ -37,6 +37,9 @@ already in context from the guidelines block.
    ```bash
    git checkout dev && git pull && git checkout -b fix/<short-desc>
    ```
+   Run `git status` first. Uncommitted changes ride along onto the new branch and end up in its
+   diff — if there are any, stop and ask whether they belong to this change. Don't stash or
+   discard them yourself.
 2. Implement following the **repo's conventions** and existing **Atom components** (don't reinvent UI the component library already provides).
 3. Run **Pint** before finalizing PHP:
    ```bash

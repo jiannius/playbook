@@ -131,7 +131,4 @@ Then `npm run build` again if the tester goes back to using the app on that bran
 - **QA only** — reading code to diagnose a bug is fine; never push commits, merge PRs, or edit application code. Findings (including any "possible cause") go in bug issues; the developer implements.
 - **Local only** — migrations and seeds run against your **local** database. (Never touching production is an org-wide rule, already in the guidelines block.)
 - **Not automated tests** — your value is real browser + operational testing; the developer's test suite is separate and not your job to run or judge.
-- **Never a bare number.** Whenever you mention a PR or issue, add a few words saying what it is —
-  "PR #123 (invoice PDF export)", not "PR #123". Testers juggle several at once and a number alone
-  gets mixed up.
 - When unsure whether something is a bug or intended, **ask the tester** (or note it in the issue as a question) rather than guessing.

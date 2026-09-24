@@ -155,6 +155,12 @@ steps**, with no log to open — `gh run view --log-failed` answers "log not fou
 ever ran. The run does carry an annotation naming the billing state, so it is not silent; it is
 just nowhere near the failure itself, and it reads like a broken build until you go looking.
 
+### Never cite a bare PR or issue number
+
+Whenever you mention a pull request or issue — in chat, a commit, a PR description, an issue, a
+summary — add a few words saying what it is: "PR #123 (invoice PDF export)", not "PR #123". Several
+are usually in flight at once, and a number alone gets mixed up with the one next to it.
+
 ### When you are unsure
 
 Ambiguity, a suspected bug, or anything outside the task's remit is a question, not a guess.
