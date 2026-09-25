@@ -18,9 +18,21 @@ name: jiannius laravel ci
 #   2. Private minutes are metered; public repos are unmetered. If a repo can
 #      be public, it costs nothing at all.
 #   3. Superseded runs keep billing unless cancelled. Hence `concurrency`.
+#   4. A hung run bills until it is killed, and GitHub's default is 360
+#      minutes. Hence `timeout-minutes`. It has to be set here: GitHub rejects
+#      `timeout-minutes` on the caller's job, the one with `uses:`.
 #
 # Before adding a job here, check it is worth a whole minute of the monthly
 # allowance on every repo that calls this.
+#
+# LEAN PULL REQUESTS. Pull requests are pushed to far more often than they
+# merge, so on one measured repo they were 68% of all CI minutes. With
+# `full-suite-on-pr: false`, a pull_request run does only the secret scan and
+# the dependency audit. Neither needs `composer install`, npm or the database,
+# so the run finishes in well under a minute. Everything else — style,
+# migrations, tests, playbook:check — is skipped, and runs on push instead.
+# That only holds if the caller also triggers on `push` to its integration
+# branch. Without it, merged code is never tested until it reaches main.
 # ---------------------------------------------------------------------------
 
 on:
@@ -88,6 +100,20 @@ on:
           mid-remediation — and say when it goes back on.
         type: boolean
         default: true
+      full-suite-on-pr:
+        description: >-
+          Run the whole suite on pull_request events. Set false to run only the
+          secret scan and dependency audit on PRs — see LEAN PULL REQUESTS in
+          this file's header, including the `push` trigger it requires.
+        type: boolean
+        default: true
+      timeout-minutes:
+        description: >-
+          Kill the job after this many minutes. A safety net against a hung
+          step billing for hours, not a performance target — set it well above
+          a normal run.
+        type: number
+        default: 30
 
 # A second push to the same branch cancels the first. Without this, an
 # abandoned run keeps consuming the allowance to produce a result nobody reads.
@@ -98,6 +124,7 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
 
     # Defined unconditionally — Actions cannot attach a service behind an `if:`.
     # A sqlite project pays a few seconds for a container it never connects to,
@@ -138,6 +165,20 @@ jobs:
           echo "  push a commit, or close and reopen the PR."
           echo "Re-running this workflow will NOT help - it replays the original payload."
           exit 1
+
+      # Decided once, so every gated step below reads one output instead of
+      # repeating the event/input expression.
+      - name: Scope
+        id: scope
+        env:
+          LEAN: ${{ github.event_name == 'pull_request' && !inputs.full-suite-on-pr }}
+        run: |
+          if [ "$LEAN" = "true" ]; then
+            echo "full=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Lean pull request run: secret scan and dependency audit only. The full suite runs on push."
+          else
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout
         uses: actions/checkout@v7
@@ -200,11 +241,14 @@ jobs:
           extensions: pdo_mysql
           coverage: none
 
+      # Every step from here to the dependency audit is skipped on a lean run.
       - name: Composer cache location
         id: composer-cache
+        if: steps.scope.outputs.full == 'true'
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Restore composer cache
+        if: steps.scope.outputs.full == 'true'
         uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -214,16 +258,18 @@ jobs:
       # Browser tests need node too, even in a repo that builds no assets —
       # the playwright CLI comes from the project's own devDependencies.
       - name: Setup Node
-        if: inputs.build-assets || inputs.browser-tests
+        if: steps.scope.outputs.full == 'true' && (inputs.build-assets || inputs.browser-tests)
         uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
 
       - name: Install PHP dependencies
+        if: steps.scope.outputs.full == 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Environment
+        if: steps.scope.outputs.full == 'true'
         run: |
           cp .env.example .env
           php artisan key:generate
@@ -233,7 +279,7 @@ jobs:
       # immutable repository). So exporting these beats .env.example without
       # editing the file.
       - name: Point Laravel at MySQL
-        if: inputs.database == 'mysql'
+        if: steps.scope.outputs.full == 'true' && inputs.database == 'mysql'
         run: |
           {
             echo "DB_CONNECTION=mysql"
@@ -245,21 +291,22 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Install Node dependencies
-        if: inputs.build-assets || inputs.browser-tests
+        if: steps.scope.outputs.full == 'true' && (inputs.build-assets || inputs.browser-tests)
         run: npm ci
 
       - name: Build assets
-        if: inputs.build-assets
+        if: steps.scope.outputs.full == 'true' && inputs.build-assets
         run: npm run build
 
       # Only chromium. --with-deps pulls the system libraries the runner lacks.
       # Downloading all three engines would roughly triple this step for browsers
       # we never drive.
       - name: Install Playwright browser
-        if: inputs.browser-tests
+        if: steps.scope.outputs.full == 'true' && inputs.browser-tests
         run: npx playwright install --with-deps chromium
 
       - name: Code style
+        if: steps.scope.outputs.full == 'true'
         run: vendor/bin/pint --test
 
       # Two parallel branches each run only their OWN migrations against their
@@ -268,16 +315,17 @@ jobs:
       # merge order. CI always starts empty, so it tests the real sequence every
       # time and nobody has to remember to.
       - name: Migrations apply from empty
-        if: inputs.check-schema
+        if: steps.scope.outputs.full == 'true' && inputs.check-schema
         run: php artisan migrate:fresh --seed --no-interaction
 
       - name: Tests
+        if: steps.scope.outputs.full == 'true'
         run: vendor/bin/pest
 
       # Boost has no verify mode. This is the gate that makes the standard stick.
       # Exit 1 = stale, run boost:update and commit. Exit 2 = misconfigured.
       - name: Guidelines are current
-        if: inputs.check-playbook
+        if: steps.scope.outputs.full == 'true' && inputs.check-playbook
         run: php artisan playbook:check
 
       # Last on purpose. An advisory is rarely the fault of the PR being tested,
@@ -285,7 +333,8 @@ jobs:
       # this runs, the interesting result is already known.
       #
       # `--locked` audits composer.lock rather than the installed tree, so it
-      # reports what this repo actually ships. Only high and critical block:
+      # reports what this repo actually ships — and needs no `composer install`,
+      # which is why it still runs on a lean pull request. Only high and critical block:
       # every level would make a fleet-wide gate that fires on someone else's
       # release schedule, and a gate people learn to ignore enforces nothing.
       - name: Dependency advisories

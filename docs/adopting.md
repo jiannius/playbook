@@ -151,12 +151,40 @@ jobs:
       base-branch: main      # only if this repo has no dev branch
       browser-tests: true    # only if tests/Browser exists
       check-audit: false     # only while clearing existing advisories — with an issue to come back
+      # full-suite-on-pr: false  # short on CI minutes? read the next section before setting this
     secrets: inherit
 ```
 
 Everything else is left at the shared defaults: PHP 8.4, Node 22, MySQL 8.0, `dev` as the
 integration branch, assets built, schema checked from empty, `playbook:check` and the secret scan
-on. Full input list is in the [workflow's own header](../.github/workflows/laravel-ci.yml).
+on, and a 30-minute job timeout. Full input list is in the [workflow's own header](../.github/workflows/laravel-ci.yml).
+
+### Short on CI minutes?
+
+Pull requests get pushed to far more often than they merge. Set `full-suite-on-pr: false` and a PR
+runs only the secret scan and dependency audit, in under a minute.
+
+**This is one change, not two settings** — setting the input without the trigger below leaves
+merged code untested until it reaches `main`:
+
+- Set `with: full-suite-on-pr: false`.
+- Add `dev` to the `push` branches. The full suite then runs once per merge, instead of never
+  running until the release reaches `main`. A failure now shows up after the merge, not before it.
+
+```yaml
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]   # keep main: it is what turns the base-branch guard red on a mis-aimed PR
+
+jobs:
+  ci:
+    uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v0
+    with:
+      full-suite-on-pr: false
+    secrets: inherit
+```
 
 Delete a separate lint workflow if you have one — `pint --test` runs as a step here, and a second
 job costs a whole billed minute to repeat it.
