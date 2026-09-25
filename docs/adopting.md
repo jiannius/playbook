@@ -177,9 +177,13 @@ on:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]   # keep main: it is what turns the base-branch guard red on a mis-aimed PR
-# ...
+
+jobs:
+  ci:
+    uses: jiannius/playbook/.github/workflows/laravel-ci.yml@v0
     with:
       full-suite-on-pr: false
+    secrets: inherit
 ```
 
 Delete a separate lint workflow if you have one — `pint --test` runs as a step here, and a second
