@@ -107,6 +107,17 @@ on:
           this file's header, including the `push` trigger it requires.
         type: boolean
         default: true
+      apt-packages:
+        description: >-
+          Space-separated apt package names to install before the suite runs,
+          e.g. `poppler-utils` or `ffmpeg imagemagick` — for a repo whose tests
+          shell out to a system binary the runner doesn't ship. Not specific to
+          any one package; any repo needing an extra system dependency uses
+          this. Empty by default: zero cost unless a repo asks for it, and
+          skipped on a lean pull request along with everything else that needs
+          it installed.
+        type: string
+        default: ''
       timeout-minutes:
         description: >-
           Kill the job after this many minutes. A safety net against a hung
@@ -182,6 +193,40 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      # Early, so every full-scope step below — composer, npm, migrations, the
+      # suite itself — can rely on it being there. Skipped on a lean run for the
+      # same reason those steps are: nothing downstream needs it yet.
+      #
+      # apt can hang or fail against a stale index. Try the install as-is first;
+      # only pay for `apt-get update` — with a bounded retry and timeout, not the
+      # runner's default — after a failure, and loop a few times before giving up
+      # loud rather than leaving a silent partial install for the next step to
+      # trip over.
+      - name: Install apt packages
+        if: steps.scope.outputs.full == 'true' && inputs.apt-packages != ''
+        env:
+          PACKAGES: ${{ inputs.apt-packages }}
+        run: |
+          set -uo pipefail
+
+          # PACKAGES is deliberately space-separated; word splitting is what turns
+          # it into one argument per package.
+          install() {
+            # shellcheck disable=SC2086
+            sudo apt-get install -y --no-install-recommends $PACKAGES
+          }
+
+          install && exit 0
+
+          for attempt in 1 2 3; do
+            echo "::notice::apt-get install failed, refreshing index and retrying (attempt ${attempt} of 3)..."
+            sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=20
+            install && exit 0
+          done
+
+          echo "::error::Could not install apt packages after retrying: ${PACKAGES}"
+          exit 1
 
       # First, unlike the advisory gate at the end of this file, and deliberately.
       # A live credential in the repo is the most important fact about the run, and

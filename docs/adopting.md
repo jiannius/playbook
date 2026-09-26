@@ -29,6 +29,7 @@ grep -A1 '"laravel/boost"' composer.lock | head -2
 | No `dev` branch | Pass `base-branch: main` in step 5 |
 | `tests/Browser` exists | Pass `browser-tests: true`, or the suite dies on `PlaywrightNotInstalledException` |
 | `laravel/boost` locked below 2.4.7 | Step 1's `-W` is doing real work; without it you get an older playbook |
+| Your current CI has its own `apt-get install` / "Install X" step | Pass `apt-packages: <names>` in step 5 — the runner doesn't have it either |
 
 ## 1. Install the package
 
@@ -151,6 +152,7 @@ jobs:
       base-branch: main      # only if this repo has no dev branch
       browser-tests: true    # only if tests/Browser exists
       check-audit: false     # only while clearing existing advisories — with an issue to come back
+      # apt-packages: poppler-utils  # only if tests shell out to a system binary the runner lacks
       # full-suite-on-pr: false  # short on CI minutes? read the next section before setting this
     secrets: inherit
 ```
