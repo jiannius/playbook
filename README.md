@@ -113,7 +113,7 @@ The specification is [`docs/playbook-install.md`](docs/playbook-install.md) — 
 for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
-`playbook:check` and its tests; four reusable CI workflows; the two repo-scoped skills at
+`playbook:check` and its tests; five reusable CI workflows; the two repo-scoped skills at
 `resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
 `composer require --dev jiannius/playbook` resolves.
 

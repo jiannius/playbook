@@ -1,6 +1,6 @@
 # Adopting playbook in an existing app
 
-Six steps, about twenty minutes. Written from doing it to the app skeleton and from surveying the
+Six steps, about twenty minutes, plus an optional seventh. Written from doing it to the app skeleton and from surveying the
 first host app — every trap below is one a real repo actually had, not one worth guarding against in
 principle.
 
@@ -212,6 +212,56 @@ Two failures that are not what they look like:
   created with. Re-running replays the same payload. Push a commit, or close and reopen.
 - **A job that dies in about two seconds having run no steps.** That is GitHub Actions billing on a
   private repo, not your code. Check the run annotation.
+
+## 7. Optional: turn on Claude
+
+Claude reviews each pull request when it opens and answers `@claude` in comments, running in GitHub
+Actions on a subscription token. It is off until the token exists: without it the job logs "not
+set, skipping" and ends green, so adding the file is safe before anyone switches anything on.
+
+Add `.github/workflows/claude.yml`:
+
+```yaml
+name: claude
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  claude:
+    uses: jiannius/playbook/.github/workflows/claude.yml@v0
+    secrets: inherit
+```
+
+- **The caller must grant those permissions.** A reusable workflow can only narrow what its caller
+  gives it. Leave them out and the run fails on its first write.
+- **`@claude` replies only work once this file is on the default branch.** Comment events always
+  run from there. Review-on-open works from the pull request's own branch, so the PR that adds this
+  file is reviewed by it.
+- Drafts are skipped. Inputs are in the [workflow's own header](../.github/workflows/claude.yml):
+  `model`, `max-turns`, `timeout-minutes`, `review-on-open`, `trigger-phrase`.
+
+To switch it on, three things, in this order:
+
+1. **An org owner installs the Claude GitHub App** on the repo.
+2. **The named owner of the seat runs `claude setup-token`.** The seat is theirs and so is the
+   token; it is one person's, on purpose.
+3. **An org owner adds `CLAUDE_CODE_OAUTH_TOKEN` as an org secret**, limited to the repos that
+   person has agreed to cover.
+
+Never a token shared without an owner. The secret is never pasted into chat, an issue or a PR.
 
 ## Afterwards
 
