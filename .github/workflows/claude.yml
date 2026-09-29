@@ -137,8 +137,16 @@ on:
 # A newer event on the same pull request or issue cancels the older run.
 # Without this, a review of a commit that has already been superseded keeps
 # running, and billing, to produce comments nobody will read.
+#
+# The last segment of the key keeps that from cutting the wrong way. The group
+# is claimed before the job-level `if:` is evaluated, so a comment that never
+# mentions the trigger phrase still starts a run here — and with a key of just
+# the PR number, that run would cancel a live review only to skip itself. So:
+# reviews share a group (a newer push supersedes an older review), mentions
+# share another (a newer ask supersedes an older one, never a review), and an
+# ignored comment gets its own run id, so it can cancel nothing.
 concurrency:
-  group: jiannius-claude-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: jiannius-claude-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name == 'pull_request' && 'review' || (contains(github.event.comment.body, inputs.trigger-phrase) && 'mention' || github.run_id) }}
   cancel-in-progress: true
 
 jobs:
