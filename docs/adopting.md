@@ -247,9 +247,12 @@ jobs:
 
 - **The caller must grant those permissions.** A reusable workflow can only narrow what its caller
   gives it. Leave them out and the run fails on its first write.
-- **`@claude` replies only work once this file is on the default branch.** Comment events always
-  run from there. Review-on-open works from the pull request's own branch, so the PR that adds this
-  file is reviewed by it.
+- **Nothing runs until this file is on the default branch.** Comment events always run from
+  there, and the action adds a guard of its own: it skips any run whose workflow file differs from
+  the default branch's copy, so a pull request cannot rewrite the workflow and run it with the
+  token. The PR that adds this file is therefore never reviewed by it, and neither is any later PR
+  that edits it — the run is green, with a "workflow validation" warning in the log. On a repo
+  whose pull requests target `dev`, that means Claude starts after the next release to `main`.
 - Drafts are skipped. Inputs are in the [workflow's own header](../.github/workflows/claude.yml):
   `model`, `max-turns`, `timeout-minutes`, `review-on-open`, `trigger-phrase`.
 
