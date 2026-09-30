@@ -3,7 +3,7 @@
 How the standard reaches a repo, what Laravel Boost already handles, and the three
 gaps `playbook` fills.
 
-Status: **adopted and delivering.** Guidelines, `playbook:check`, the four reusable workflows and
+Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows and
 the two skills exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
@@ -187,7 +187,7 @@ rung 1 whenever the check is mechanisable — see "The enforcement ladder".
 
 ### 1c. The workflows, as built
 
-Four files in `.github/workflows/`. Consumers **call** them, never copy them.
+Five files in `.github/workflows/`. Consumers **call** them, never copy them.
 
 | File | Trigger | For |
 |---|---|---|
@@ -195,6 +195,7 @@ Four files in `.github/workflows/`. Consumers **call** them, never copy them.
 | `package-ci.yml` | `workflow_call` | Packages — Testbench, no artisan. Matrixes lowest/highest deps |
 | `ci.yml` | push + PR | playbook's own CI, calling `package-ci.yml` — dogfooding |
 | `major-ref.yml` | `v*.*.*` tag push | Moves the `v1` **branch** to the new release |
+| `claude.yml` | `workflow_call` | Claude on a subscription token: reviews each PR when it opens, answers `@claude`. Skips green without the token. playbook runs it on itself via `dogfood-claude.yml` |
 
 ```yaml
 jobs:
@@ -247,6 +248,27 @@ Two consequences worth knowing:
   one change that could surface latent failures in an existing repo whose suite quietly assumed
   sqlite. Those are real bugs rather than CI noise — though a repo mid-migration can set
   `database: sqlite` to defer them.
+
+**`claude.yml` is switched on by a secret, not by a release.** Three decisions are load-bearing.
+
+- **The token gate.** `CLAUDE_CODE_OAUTH_TOKEN` is an optional secret. When it is missing the job
+  logs "not set, skipping", skips the action steps and ends green, so the workflow can be called
+  from a repo before anyone owns a token and starts working the moment the secret is added. The
+  gate is a step because the `secrets` context is not available in a job-level `if:`; the job-level
+  `if:` uses only `github.event` and `inputs`, so an ignored event (a comment without `@claude`, a
+  draft PR) never starts a runner. This is the first `secrets:` declaration in any playbook
+  workflow — naming it is what lets a caller leave it out.
+- **Whose seat.** The token is a subscription seat, and a seat belongs to one person. It is made by
+  that named owner with `claude setup-token` and added as an org secret limited to the repos they
+  chose. It is never a token shared without an owner. `github_token` is not passed, so the action
+  acts as the Claude GitHub App and CI still runs on the commits it pushes.
+- **One reviewer, and it is Anthropic's.** The review step runs the official `code-review` plugin
+  instead of a prompt of ours. Jiannius rules reach it through each repo's own `CLAUDE.md` /
+  `AGENTS.md`, which this package already fills. An earlier idea kept `pr-reviewer` and
+  `/code-review` side by side; they duplicated each other, so there is one.
+
+The two modes use two separate action steps, each with its own `if:`, because the action chooses
+its mode by whether `prompt` is present and an empty string is not something to lean on.
 
 **`major-ref.yml` is the ladder applied to ourselves.** Consumers pin a major ref while composer
 resolves semver, so every release needs two refs and the moving one is exactly what a person

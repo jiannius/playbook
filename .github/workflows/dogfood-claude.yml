@@ -1,0 +1,48 @@
+name: claude
+
+# playbook calling its own reusable claude.yml, the same way ci.yml calls
+# package-ci.yml. If claude.yml breaks, it breaks here first — and this file is
+# also the template for the caller other repos copy (see docs/adopting.md).
+#
+# ---------------------------------------------------------------------------
+# WHY THIS IS SAFE ON A PUBLIC REPO. Anyone can open a pull request or comment
+# here, so two things stand between a stranger and our subscription seat:
+#
+#   1. The action itself requires write access from whoever triggers it, and
+#      ignores bots. A drive-by `@claude` from someone without write access
+#      does nothing.
+#   2. GitHub withholds secrets from pull requests opened from a fork, so the
+#      token gate in claude.yml sees an empty token, skips, and ends green.
+#
+# It costs no minutes either way: public repos are unmetered.
+#
+# WITHOUT THE TOKEN this run still happens — the `claude` job starts, logs
+# "not set, skipping" and ends green. That is deliberate: it is the proof that
+# the workflow is safe to call from a repo that has not been switched on.
+#
+# `@claude` replies only work once this file is on the default branch, because
+# comment events always run from there. Review-on-open works from a PR branch.
+#
+# The permissions are the ones claude.yml documents. A reusable workflow cannot
+# widen what its caller grants, so they are set here, not inherited.
+# ---------------------------------------------------------------------------
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  claude:
+    uses: ./.github/workflows/claude.yml
+    secrets: inherit
