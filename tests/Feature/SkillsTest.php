@@ -18,9 +18,9 @@ function shippedSkillDirs(): array
         ->all();
 }
 
-it('ships the two repo-scoped skills', function () {
+it('ships the three repo-scoped skills', function () {
     expect(array_keys(shippedSkillDirs()))
-        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester']);
+        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester', 'jiannius-wrap-up']);
 });
 
 it('gives every skill the SKILL.md filename Boost looks for', function () {

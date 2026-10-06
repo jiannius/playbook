@@ -268,9 +268,10 @@ Never a token shared without an owner. The secret is never pasted into chat, an 
 
 ## Afterwards
 
-- The two repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester` — are now in the session for
-  anyone working in this repo, from `.claude/skills/`. The marketplace copies are mirrors of the
-  same text and can be uninstalled once every repo a person opens has adopted the package.
+- The three repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-wrap-up` — are
+  now in the session for anyone working in this repo, from `.claude/skills/`. The marketplace
+  copies of the first two are mirrors of the same text and can be uninstalled once every repo a
+  person opens has adopted the package.
 - Every `composer update` re-runs `boost:update` through `post-update-cmd`, so the guidelines and
   skills stay current on their own. CI catches it when they do not.
 - Anything you turned off in step 5 (`check-audit`, `check-secrets`) is a note to come back, not a

@@ -4,7 +4,7 @@ How the standard reaches a repo, what Laravel Boost already handles, and the thr
 gaps `playbook` fills.
 
 Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows and
-the two skills exist; the package resolves from Packagist; and the app skeleton installs it and
+the three skills exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target
@@ -290,6 +290,9 @@ GitHub resolves `@v0` for a branch exactly as for a tag, so no consumer changes 
 Two skills moved in from the internal plugin marketplace because they are useless outside a repo:
 `jiannius-dev` (changing an existing Laravel project) and `jiannius-qa-tester` (setting up a
 PR on Herd and browser-testing it). Both now live at `resources/boost/skills/<name>/SKILL.md`.
+
+`jiannius-wrap-up` (closing a session cleanly) is a third skill, written for the package directly;
+it has no marketplace copy.
 
 **The QA-composer question is closed.** The worry was that a QA person without `composer install`
 would never see a skill shipped in `vendor/`. `SkillWriter::writeNonCustomSkill()` copies the skill
