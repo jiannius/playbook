@@ -291,6 +291,9 @@ Two skills moved in from the internal plugin marketplace because they are useles
 `jiannius-dev` (changing an existing Laravel project) and `jiannius-qa-tester` (setting up a
 PR on Herd and browser-testing it). Both now live at `resources/boost/skills/<name>/SKILL.md`.
 
+`jiannius-wrap-up` (closing a session cleanly) is a third skill, written for the package directly;
+it has no marketplace copy.
+
 **The QA-composer question is closed.** The worry was that a QA person without `composer install`
 would never see a skill shipped in `vendor/`. `SkillWriter::writeNonCustomSkill()` copies the skill
 directory out of `vendor/` into `.claude/skills/<name>/` — a committed path, so a plain `git clone`

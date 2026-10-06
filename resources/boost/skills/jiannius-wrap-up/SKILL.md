@@ -1,6 +1,6 @@
 ---
 name: jiannius-wrap-up
-description: "Wrap up a Claude Code session in a Jiannius repo before closing it. Say 'wrap up', 'close the session' or 'I'm done'. Clears leftovers, settles git and worktrees, writes the handoff."
+description: "Wrap up a Claude Code session in a Jiannius repo before closing it. Say 'wrap up' or 'close the session'. Clears leftovers, settles git and worktrees, writes the handoff."
 ---
 
 # Wrapping up a session
@@ -15,73 +15,99 @@ Claude Code already handles some of this on exit — background tasks stop, a wo
 `EnterWorktree` prompts keep-or-remove, memory is saved as you go. This skill covers what it leaves
 behind. You cannot end the session yourself; the last step is telling the person to type `/exit`.
 
+Branch, commit and push rules belong to `jiannius-dev`, and the universal rules — production,
+secrets and customer data, ask when unsure — come from the guidelines block of this repo's agent
+file. This skill does not restate them.
+
 ## The one rule
 
-**Clean up only what this session made.** The conversation is the inventory: the files you wrote,
-the branches and worktrees you created, the settings you switched. A file you cannot trace back to
-this session is not yours to delete, however useless it looks — list it and ask.
+**Files traceable to this session are removed without asking; everything else is asked about, once.**
+
+The conversation is the inventory: the screenshots, scratch scripts and exports you wrote. Those go.
+Everything else — a file you cannot trace to this session, every git action (commit, push, branch or
+worktree removal), anything outside the repo — is listed and put in **one question covering the
+whole batch**. Do not ask per item.
+
+If the session was resumed or compacted, treat anything you cannot see in the conversation as
+untraced.
 
 Never discard work. Uncommitted changes, unpushed commits and unmerged branches are reported, not
 removed.
 
-## 1. Take stock
+## 1. Hand the checkout back
+
+If the QA skill ran, its own final step owns returning the checkout to its starting branch,
+including the migration rollback. If the main checkout is still on a PR branch, do that step first —
+the rollback needs the PR's migration files, which are gone once you leave the branch.
+
+## 2. Take stock
 
 ```bash
-git status --porcelain
+git fetch --prune
+git status --porcelain --ignored
 git worktree list
 git branch -vv
 ```
 
-Run these in the main checkout as well as any worktree — the leftovers can be in either. Stop any
-server you started outside a background task, which outlives the session, and close the
-Playwright browser if you opened one.
+Run these in the main checkout as well as any worktree — the leftovers can be in either. `--ignored`
+shows gitignored leftovers such as `.playwright-mcp/` and `storage/`. Stop any server you started
+outside a background task, which outlives the session, and close the Playwright browser if you
+opened one.
 
-## 2. Put back what you switched
+## 3. Put back what you switched
 
 - **`.env` edits** — a changed `DB_DATABASE`, a toggled `APP_DEBUG`, a test key. Restore the value
-  that was there before, and confirm with the person if you are not sure what it was.
-- **The main checkout's branch.** If the session checked out a PR or feature branch there (QA does
-  this), return to the branch it was on at the start — after step 4 has settled anything on it.
+  that was there before; if you are not sure what it was, put it in the question. Never print `.env`
+  values in the summary.
 - **Herd** — sites linked, secured or isolated during the session, if they were not meant to stay.
-- **A database you created** for a second worktree — drop it only once its worktree is gone, and
-  only if it is a local throwaway.
 
-## 3. Remove the leftovers
+## 4. Remove what this session made
 
-- **Screenshots** — `.playwright-mcp/`, PNGs written to the repo root or `storage/`, anything taken
-  to look at a page rather than to attach to an issue or PR. One already uploaded to a bug report
-  has done its job; one about to be uploaded has not.
+- **Screenshots** — `.playwright-mcp/`, PNGs written to the repo root or `storage/`, taken to look
+  at a page.
 - **Temporary scripts** — one-off `*.php` / `*.sh` / `*.js` probes and tinker scratch files.
 - **Temporary data** — exported CSVs, query dumps, downloaded files.
 
-Check each against `git status`. Untracked and made this session → remove it. Tracked, or untracked
-but older than the session → leave it and mention it.
+Judge "made this session" by the conversation and by mtime (`ls -lt`) — a file older than the
+session is untraced. Tracked files are never removed here.
+
+**Exception — QA screenshots.** `jiannius-qa-tester` has the tester drag screenshots into issues by
+hand, so you cannot know an upload happened. A screenshot tied to a filed or pending bug is listed
+and kept unless the person says they are done with it.
 
 A `dd()`, `dump()`, `ray()` or debug route left in code is a change, not a clean-up. Raise it in
-step 4; don't silently edit committed work.
+step 5; don't silently edit committed work.
 
-## 4. Settle git
+## 5. Settle git and the rest
 
 Report the state, then ask **once** for everything that needs a decision:
 
 - **Uncommitted changes** — do they belong in a commit? Commit only on the person's say-so,
   following the repo's commit conventions.
-- **Unpushed commits** — `git log @{u}..` on each branch the session touched. Push on the person's
-  say-so. Never push to `main`.
-- **A branch with no upstream** — say so; it exists only on this machine.
-- **Worktrees made with `git worktree add`** — Claude Code will not prompt for these. Clean and
-  merged or pushed → `git worktree remove <path>`; otherwise keep and list it.
-- **Branches the session created that are now merged** (`git branch --merged`) → `git branch -d`.
+- **Unpushed commits** — read the `git branch -vv` output: `ahead` means unpushed, no upstream means
+  the branch exists only on this machine, `[gone]` means the remote branch was deleted. Push on the
+  person's say-so.
+- **Finished branches** — Jiannius squash-merges PRs, so `git branch --merged` and `-d` never
+  recognise them. A branch is done when `git branch -vv` shows `[gone]` or
+  `gh pr view <branch> --json state` reports `MERGED`. List those and offer `git branch -D`.
+- **Worktrees made with `git worktree add`** — Claude Code will not prompt for these, and an
+  `EnterWorktree` worktree still listed gets the same treatment. Clean and merged or pushed → offer
+  to remove it. Run `git worktree remove <path>` from the main checkout (`git -C`), not from inside
+  the worktree, and glance at its ignored `.env` / `DB_DATABASE` first: removal deletes ignored
+  files. Remove a worktree before deleting the branch it holds.
+- **A local database this session created** (for a second worktree, say) — drop it only after
+  confirming `DB_HOST` is local and the name is one this session created, and only once its
+  worktree is gone.
+- **Untraced files** from steps 2 and 4, listed so the person can decide.
 
 Never `git worktree remove --force`, never `-D` a branch whose commits exist nowhere else, and never
 touch worktrees or branches another session made.
 
-## 5. Handoff
+## 6. Handoff
 
 Finish with a short summary:
 
-- **Shipped** — commits, PRs and issues, each linked and described in a few words, never a bare
-  `#123`.
+- **Shipped** — commits, PRs and issues, each linked and described in a few words.
 - **Still open** — what is unfinished, and the next step.
 - **Left in place** — anything you deliberately did not clean up, and why.
 
@@ -90,8 +116,9 @@ unmerged branch — say that instead.
 
 ## Guardrails (role-specific)
 
-- Ask before deleting, committing or pushing. One question covering the whole batch beats a
-  question per file.
-- Nothing destructive outside the repo.
+- Session files are removed without asking; everything else goes into the one question in step 5.
+- Nothing destructive outside the repo except what this session created — a local database, a Herd
+  link. A database is dropped only after confirming `DB_HOST` is local and the name is one this
+  session created, as part of that question.
 - The universal rules — production, secrets and customer data, ask when unsure — are in the
   guidelines block of this repo's agent file and apply in addition to the above.
