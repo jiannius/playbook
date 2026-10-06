@@ -4,7 +4,7 @@ How the standard reaches a repo, what Laravel Boost already handles, and the thr
 gaps `playbook` fills.
 
 Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows and
-the two skills exist; the package resolves from Packagist; and the app skeleton installs it and
+the three skills exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target

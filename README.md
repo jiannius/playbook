@@ -15,6 +15,7 @@ format and adds only the enforcement Boost lacks. See
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
+| **Session wrap-up** | Closing a session cleanly: stop what it started, remove its leftovers, settle git and worktrees, hand off |
 | **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills have drifted, and when they are gitignored so a clone would never see them |
 | **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v0` |
 | **Hooks** | Claude Code hook definitions, rendered into `.claude/settings.json` |
@@ -113,7 +114,7 @@ The specification is [`docs/playbook-install.md`](docs/playbook-install.md) — 
 for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
-`playbook:check` and its tests; five reusable CI workflows; the two repo-scoped skills at
+`playbook:check` and its tests; five reusable CI workflows; the three repo-scoped skills at
 `resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
 `composer require --dev jiannius/playbook` resolves.
 
