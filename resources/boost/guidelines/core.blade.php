@@ -106,6 +106,35 @@ guarantee that anything ran. What CI can never do, however it is configured, is 
 does not exist**. Whether a change arrives with one is the part no check can decide for you, which
 is why it is written here rather than left to the pipeline.
 
+### Check GitHub before you start
+
+Before starting work on a bug, feature or investigation, find out whether it is already known.
+Search **open and closed** issues and pull requests for the symptom or feature, and the remote
+branches for anyone already on it:
+
+```bash
+gh issue list --state all --search "<keywords>"
+gh pr list --state all --search "<keywords>"
+git fetch --prune && git branch -r
+```
+
+What you find decides what happens next:
+
+- **An open issue assigned to someone else, an open pull request, or a recent unmerged branch that
+  matches the work** — someone already owns it. Coordinate with them; do not start a second fix
+  for the same problem. If it is yours, or you were asked to continue it, carry on.
+- **An open issue nobody is assigned to** — work from that issue rather than opening a duplicate,
+  and note on it that you have picked it up.
+- **A closed issue with the same symptom** — report it as a likely regression. Reopen it, linking
+  the pull request that fixed it last time, only once you have confirmed the cause is the same;
+  if the cause turns out different, open a new issue that links the old one. An issue closed as
+  not planned or as a duplicate is not a regression — do not reopen it.
+- **Nothing** — open an issue before you start, so the work has somewhere to live.
+
+Opening, reopening, commenting on and assigning issues are all visible to the whole team. Report
+what you found and get a yes before doing any of them. If you are a subagent, put the finding in
+your report to the caller and let them decide.
+
 ### Find the cause before you change the code
 
 When something is broken — a failing test, a user complaint, a bug reported on a PR — reproduce it

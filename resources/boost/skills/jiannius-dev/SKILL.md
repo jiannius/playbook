@@ -32,8 +32,9 @@ already in context from the guidelines block.
 
 ## Making a change (bug fix / enhancement)
 
-1. Start from the issue. Branch off `dev` — `fix/<short-desc>` for a bug, `feat/<short-desc>` for
-   an enhancement:
+1. Start from the issue, after checking GitHub for it (the guidelines block's *Check GitHub before
+   you start*). Branch off `dev` — `fix/<short-desc>` for a bug, `feat/<short-desc>` for an
+   enhancement:
    ```bash
    git checkout dev && git pull && git checkout -b fix/<short-desc>
    ```
