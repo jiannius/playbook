@@ -19,6 +19,7 @@ it('composes the rules that must not silently disappear', function () {
     expect($this->renderedGuidelines())
         ->toContain('Every change ships with a test')
         ->toContain('Check GitHub before you start')
+        ->toContain('let them decide')
         ->toContain('Find the cause before you change the code')
         ->toContain('Show the evidence before you call it done')
         ->toContain('Plan before a change that spans many files')

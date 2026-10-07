@@ -115,22 +115,25 @@ branches for anyone already on it:
 ```bash
 gh issue list --state all --search "<keywords>"
 gh pr list --state all --search "<keywords>"
-git fetch && git branch -r
+git fetch --prune && git branch -r
 ```
 
 What you find decides what happens next:
 
-- **An open issue that is assigned, or an open pull request or branch** — someone already owns it.
-  Coordinate with them; do not start a second fix in parallel.
-- **An open issue nobody is assigned to** — work from that issue and say on it that you have picked
-  it up. Do not open a duplicate.
-- **A closed issue whose problem is back** — it is a regression. Reopen it and link the pull request
-  that fixed it last time, so the history stays in one thread. If the cause is clearly different,
-  open a new issue that links the old one instead.
+- **An open issue assigned to someone else, an open pull request, or a recent unmerged branch that
+  matches the work** — someone already owns it. Coordinate with them; do not start a second fix
+  for the same problem. If it is yours, or you were asked to continue it, carry on.
+- **An open issue nobody is assigned to** — work from that issue rather than opening a duplicate,
+  and note on it that you have picked it up.
+- **A closed issue with the same symptom** — report it as a likely regression. Reopen it, linking
+  the pull request that fixed it last time, only once you have confirmed the cause is the same;
+  if the cause turns out different, open a new issue that links the old one. An issue closed as
+  not planned or as a duplicate is not a regression — do not reopen it.
 - **Nothing** — open an issue before you start, so the work has somewhere to live.
 
-Reopening, commenting and assigning are visible to the whole team. Report what you found and get a
-yes before doing any of them.
+Opening, reopening, commenting on and assigning issues are all visible to the whole team. Report
+what you found and get a yes before doing any of them. If you are a subagent, put the finding in
+your report to the caller and let them decide.
 
 ### Find the cause before you change the code
 
