@@ -353,7 +353,7 @@ class CheckCommand extends Command
         $problems = [];
 
         if (preg_match('/^@'.preg_quote($target, '/').'[ \t]*$/m', $content) !== 1) {
-            $problems[] = sprintf('CLAUDE.md does not import %1$s, and Claude Code never loads %1$s while CLAUDE.md exists. Fix: add the line [@%1$s] to CLAUDE.md.', $target);
+            $problems[] = sprintf('CLAUDE.md does not import %1$s, and Claude Code never loads %1$s while CLAUDE.md exists. Fix: move the constitution from CLAUDE.md to below the guidelines block in %1$s, then reduce CLAUDE.md to the single line [@%1$s].', $target);
         }
 
         if (preg_match(self::BLOCK, $content) === 1) {
