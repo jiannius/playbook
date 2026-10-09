@@ -104,6 +104,18 @@ The standard layout from 2.10 on:
 Without that, the staleness check would pass — `AGENTS.md` really is current — while Claude read
 a frozen copy. On Boost before 2.10 nothing changes.
 
+**2.10.1 changed the default again.** With no `guidelines_path` configured, `ClaudeCode` now
+writes to `CLAUDE.md` whenever that file exists, and to `AGENTS.md` only when it does not. That
+undoes the layout above on the next `boost:update`: the managed block is appended under the
+`@AGENTS.md` line. `playbook:check` does not notice, because the target is `CLAUDE.md` again. So
+the layout needs `config/boost.php` to pin `agents.claude_code.guidelines_path` to `AGENTS.md`.
+Laravel merges an app's config file over the package defaults, so that file needs only the keys it
+pins. ([adopting.md](adopting.md#4-render-and-commit) step 4 has the file.)
+
+The same file pins `enforce_tests`. Left unset, Boost works out whether to write its Test
+Enforcement block by running `php artisan test --list-tests`. That command fails in some
+environments, so the block comes and goes between runs.
+
 Two other 2.10 changes the tests had to absorb: package discovery now reads **`composer.lock`**
 (through `laravel/roster`), not `composer.json`, and counts only **direct** dependencies —
 `require-dev` included, so `jiannius/playbook` as a dev dependency is still found.

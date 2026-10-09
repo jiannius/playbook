@@ -34,8 +34,12 @@ grep -A1 '"laravel/boost"' composer.lock | head -2
 ## 1. Install the package
 
 ```bash
-composer require --dev jiannius/playbook -W
+composer require --dev "jiannius/playbook:^0.4" -W
 ```
+
+**Name the constraint.** Left bare, `composer require` can write `"*"` — the first host app got
+exactly that — and then any breaking release lands on the next `composer update` without anyone
+noticing. Check `composer.json` afterwards and make sure it says `^0.4`, not `*`.
 
 **The `-W` is required, not tidiness.** `composer require` does a *partial* update and cannot move a
 package already pinned in your `composer.lock`. If `laravel/boost` is locked below 2.4.7 — the first
@@ -103,6 +107,10 @@ Ignore only the per-person files:
 `playbook:check` exits 2 on an ignored-and-untracked skills path. Ignored *and* force-added is
 accepted — a tracked file is committed whatever the pattern says.
 
+**Commit `boost.json` too.** If it is ignored, a fresh worktree or CI checkout has none, so
+`boost:update` stops at "Please set up Boost with boost:install first" and `playbook:check` has
+nothing to read. Check with `git check-ignore -v boost.json`.
+
 ## 4. Render and commit
 
 ```bash
@@ -117,8 +125,33 @@ Claude Code skips `AGENTS.md` whenever a `CLAUDE.md` exists, so make the one-tim
 
 1. Move the repo's own constitution from `CLAUDE.md` to **below** the managed block in `AGENTS.md`.
 2. Replace the whole of `CLAUDE.md`, old guidelines block included, with the single line `@AGENTS.md`.
+3. Add `config/boost.php` to pin both settings below, then run `boost:update` again.
 
-`playbook:check` exits 2 until both are done. On Boost before 2.10 skip this — Claude Code's
+```php
+<?php
+
+return [
+    'enforce_tests' => true,
+
+    'agents' => [
+        'claude_code' => [
+            'guidelines_path' => 'AGENTS.md',
+        ],
+    ],
+];
+```
+
+Both settings are needed:
+
+- **`guidelines_path`**. From 2.10.1, Boost sends Claude Code's guidelines back to `CLAUDE.md`
+  whenever that file exists. Without the pin, the next `boost:update` adds the whole managed block
+  to the `CLAUDE.md` you just cut down to one line, which undoes step 2.
+- **`enforce_tests`**. If it is unset, Boost decides whether to write its Test Enforcement block by
+  running `php artisan test --list-tests`. In a repo with browser tests, or anywhere that command
+  can fail, the block appears on some runs and not on others. `AGENTS.md` then changes from run to
+  run, and `playbook:check` passes on whichever version was written last.
+
+`playbook:check` exits 2 until steps 1 and 2 are done. On Boost before 2.10 skip this — Claude Code's
 guidelines still go to `CLAUDE.md`. The reason is recorded in
 [`playbook-install.md`](playbook-install.md#changed-in-boost-210-2026-09-24).
 
