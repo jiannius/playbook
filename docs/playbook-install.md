@@ -102,7 +102,28 @@ The standard layout from 2.10 on:
 `playbook:check` enforces it: when Claude Code's guidelines go anywhere but `CLAUDE.md` and a
 `CLAUDE.md` exists, it exits 2 unless that file imports the target and carries no leftover block.
 Without that, the staleness check would pass — `AGENTS.md` really is current — while Claude read
-a frozen copy. On Boost before 2.10 nothing changes.
+a frozen copy.
+
+**2.10.1 changed the default again.** With no `guidelines_path` configured, `ClaudeCode` now
+writes to `CLAUDE.md` whenever that file exists, and to `AGENTS.md` only when it does not. That
+undoes the layout above on the next `boost:update`: the managed block is appended under the
+`@AGENTS.md` line. `playbook:check` does not notice, because the target is `CLAUDE.md` again.
+
+So the package sets `boost.agents.claude_code.guidelines_path` to `AGENTS.md` itself
+(`PlaybookServiceProvider::register()`), only when the repo has not set it. A repo's own
+`config/boost.php` still wins. This is why playbook requires Boost `^2.10.3`: on anything older,
+forcing `AGENTS.md` would also move Claude Code's guidelines on a Boost that was never meant to
+send them there. It is also why this shipped as a minor release (v0.5.0). A repo still on the old
+`CLAUDE.md` layout now gets exit 2 from `playbook:check` until it does the move in
+[adopting.md](adopting.md#4-render-and-commit) step 4.
+
+**`enforce_tests` is set the same way, to `false`.** Left unset, Boost works out whether to write
+its Test Enforcement block by running `php artisan test --list-tests`. That command fails in some
+environments, so the block comes and goes between runs and `AGENTS.md` changes with it. The value is
+`false` rather than `true` because playbook already ships its own test rule, "Every change ships with
+a test" (`GuidelinesTest` records why it lives here). With `true`, a repo would carry two test rules;
+with `false` it carries one that never changes. A repo that wants Boost's block as well sets
+`'enforce_tests' => true` in its own `config/boost.php`.
 
 Two other 2.10 changes the tests had to absorb: package discovery now reads **`composer.lock`**
 (through `laravel/roster`), not `composer.json`, and counts only **direct** dependencies —

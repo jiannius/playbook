@@ -71,9 +71,9 @@ abstract class TestCase extends BaseTestCase
 
         $this->app->setBasePath($dir);
 
-        // Boost 2.10 moved Claude Code's default from CLAUDE.md to AGENTS.md. Pin it so these
-        // fixtures mean the same thing on every Boost the package allows; the AGENTS.md layout
-        // has its own tests, which set this back explicitly.
+        // The package defaults Claude Code's guidelines to AGENTS.md (see BoostDefaultsTest). These
+        // fixtures were written for the CLAUDE.md layout, so pin it back after boot; the AGENTS.md
+        // layout has its own tests, which set it explicitly.
         config(['boost.agents.claude_code.guidelines_path' => 'CLAUDE.md']);
         $this->fakeProject = $dir;
 
