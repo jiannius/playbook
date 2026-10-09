@@ -115,8 +115,9 @@ for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
 `playbook:check` and its tests; five reusable CI workflows; the three repo-scoped skills at
-`resources/boost/skills/`. On Packagist since 2026-08-30 — `v0.2.1`, with `v0` tracking it, so
-`composer require --dev jiannius/playbook` resolves.
+`resources/boost/skills/`. On Packagist since 2026-08-30. The current version is whichever is
+latest on the [releases page](https://github.com/jiannius/playbook/releases). The `v0` branch
+follows each release, so workflows called at `@v0` stay current.
 
 **Verified end to end** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the
 package, names it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`,
