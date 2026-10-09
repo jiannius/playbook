@@ -28,21 +28,21 @@ grep -A1 '"laravel/boost"' composer.lock | head -2
 | `.claude/skills` is ignored | Step 3 is not optional for you. This is the most common finding |
 | No `dev` branch | Pass `base-branch: main` in step 5 |
 | `tests/Browser` exists | Pass `browser-tests: true`, or the suite dies on `PlaywrightNotInstalledException` |
-| `laravel/boost` locked below 2.4.7 | Step 1's `-W` is doing real work; without it you get an older playbook |
+| `laravel/boost` locked below 2.10.3 | Step 1's `-W` will move it. playbook requires `^2.10.3`; without `-W` you get an older playbook |
 | Your current CI has its own `apt-get install` / "Install X" step | Pass `apt-packages: <names>` in step 5 — the runner doesn't have it either |
 
 ## 1. Install the package
 
 ```bash
-composer require --dev "jiannius/playbook:^0.4" -W
+composer require --dev "jiannius/playbook:^0.5" -W
 ```
 
 **Name the constraint.** Left bare, `composer require` can write `"*"` — the first host app got
 exactly that — and then any breaking release lands on the next `composer update` without anyone
-noticing. Check `composer.json` afterwards and make sure it says `^0.4`, not `*`.
+noticing. Check `composer.json` afterwards and make sure it says `^0.5`, not `*`.
 
 **The `-W` is required, not tidiness.** `composer require` does a *partial* update and cannot move a
-package already pinned in your `composer.lock`. If `laravel/boost` is locked below 2.4.7 — the first
+package already pinned in your `composer.lock`. If `laravel/boost` is locked below 2.10.3 — the first
 host app was on 2.4.6 — composer resolves the newest playbook that tolerates *your* Boost instead of
 telling you anything. Dry-run on that repo, the difference is silent:
 
@@ -120,40 +120,22 @@ php artisan playbook:check     # expect: exit 0
 
 Then commit both halves — the agent files **and** `.claude/skills/`.
 
-On **Boost 2.10 or later** the guidelines go to `AGENTS.md` for every agent, Claude Code included.
-Claude Code skips `AGENTS.md` whenever a `CLAUDE.md` exists, so make the one-time move:
+Boost 2.10 and later send the guidelines to `AGENTS.md` for every agent, Claude Code included, and playbook
+requires 2.10.3. Claude Code skips `AGENTS.md` whenever a `CLAUDE.md` exists, so make the one-time move:
 
 1. Move the repo's own constitution from `CLAUDE.md` to **below** the managed block in `AGENTS.md`.
 2. Replace the whole of `CLAUDE.md`, old guidelines block included, with the single line `@AGENTS.md`.
-3. Add `config/boost.php` to pin both settings below, then run `boost:update` again.
+3. Run `boost:update` again. The package sets Claude Code's `guidelines_path` to `AGENTS.md` and
+   `enforce_tests` to `false` itself, so there is no `config/boost.php` to add. A repo that wants
+   different values sets them in its own `config/boost.php`, which overrides the package.
 
-```php
-<?php
+Without those two defaults the move would not hold. From Boost 2.10.1, an unset `guidelines_path`
+sends Claude Code's guidelines back to `CLAUDE.md` whenever that file exists, and an unset
+`enforce_tests` makes Boost run `php artisan test --list-tests` on every `boost:update`, so its Test
+Enforcement block comes and goes. `enforce_tests` is `false` because playbook ships its own test
+rule. The reasoning is in [`playbook-install.md`](playbook-install.md#changed-in-boost-210-2026-09-24).
 
-return [
-    'enforce_tests' => true,
-
-    'agents' => [
-        'claude_code' => [
-            'guidelines_path' => 'AGENTS.md',
-        ],
-    ],
-];
-```
-
-Both settings are needed:
-
-- **`guidelines_path`**. From 2.10.1, Boost sends Claude Code's guidelines back to `CLAUDE.md`
-  whenever that file exists. Without the pin, the next `boost:update` adds the whole managed block
-  to the `CLAUDE.md` you just cut down to one line, which undoes step 2.
-- **`enforce_tests`**. If it is unset, Boost decides whether to write its Test Enforcement block by
-  running `php artisan test --list-tests`. In a repo with browser tests, or anywhere that command
-  can fail, the block appears on some runs and not on others. `AGENTS.md` then changes from run to
-  run, and `playbook:check` passes on whichever version was written last.
-
-`playbook:check` exits 2 until steps 1 and 2 are done. On Boost before 2.10 skip this — Claude Code's
-guidelines still go to `CLAUDE.md`. The reason is recorded in
-[`playbook-install.md`](playbook-install.md#changed-in-boost-210-2026-09-24).
+`playbook:check` exits 2 until steps 1 and 2 are done. `boost:update` cannot do them for you.
 
 What the exit codes mean:
 
