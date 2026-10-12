@@ -39,8 +39,8 @@ name: jiannius laravel ci
 #
 #   - `parallel` runs `pest --parallel`. Off because it changes behaviour, not
 #     just speed: every process gets its own database (`<db>_test_N`), and
-#     Pest's parallel mode turns PHP warnings — deprecations, notices — into
-#     failures, so a suite that is green serially can go red. That wants a
+#     Pest's parallel mode turns PHP warnings into failures, so a suite that
+#     is green serially can go red. (Deprecations are printed, not fatal.) That wants a
 #     person to look at it, not a silent upgrade of every repo in the fleet.
 #   - `opcache` enables opcache for the PHP CLI, which setup-php leaves off.
 #
@@ -99,11 +99,12 @@ on:
           dropped by Laravel — which works here because CI connects as MySQL
           root. The "Migrations apply from empty" step still runs serially
           against `testing` first. `pest --parallel` turns PHP warnings
-          (deprecations, notices) into failures, so a suite that is green
-          serially can go red: fix the warnings, don't turn this off quietly.
-          Pest defaults to one process per CPU, and ubuntu-latest has 2 vCPU on
-          a private repo (4 on a public one), so expect a smaller gain than on
-          a laptop. See `processes`.
+          into failures, so a suite that is green serially can go red: fix the
+          warnings, don't turn this off quietly. Deprecations are printed to the
+          log but do not fail the run. Pest defaults to one process per CPU, and
+          ubuntu-latest has 2 vCPU on a private repo (4 on a public one), so
+          expect a smaller gain than on a laptop: on one private app the Tests
+          step went from 580 s to 422 s. See `processes`.
         type: boolean
         default: false
       processes:
@@ -116,9 +117,10 @@ on:
         description: >-
           Enable opcache for the PHP CLI. setup-php leaves it off, so every
           test process recompiles the framework from source; on one app this
-          took about 13% off a Feature-test subset. JIT is pinned off because
-          setup-php pre-sets opcache.jit=1235 with a 256M buffer, so
-          opcache.enable_cli alone would also switch JIT on — which measured no
+          took about 13% off a Feature-test subset. JIT is pinned off
+          (opcache.jit=disable) because setup-php pre-sets opcache.jit=1235
+          with a 256M buffer, so opcache.enable_cli alone would also switch JIT
+          on — which measured no
           gain and carries crash risk. Off by default so nothing changes for a
           caller that does not ask for it.
         type: boolean
@@ -332,8 +334,8 @@ jobs:
           extensions: pdo_mysql
           coverage: none
           # Empty unless `opcache` is set, which leaves setup-php's defaults
-          # untouched. jit=off is explained on the `opcache` input.
-          ini-values: ${{ inputs.opcache && 'opcache.enable_cli=1, opcache.jit=off' || '' }}
+          # untouched. jit=disable is explained on the `opcache` input.
+          ini-values: ${{ inputs.opcache && 'opcache.enable_cli=1, opcache.jit=disable' || '' }}
 
       # Every step from here to the dependency audit is skipped on a lean run.
       - name: Composer cache location
@@ -424,7 +426,8 @@ jobs:
           set -euo pipefail
 
           # TEMP (e2e verification, remove before merge)
-          php -r 'echo "opcache.enable_cli=", var_export(ini_get("opcache.enable_cli"), true), " jit=", var_export(ini_get("opcache.jit"), true), PHP_EOL;'
+          # shellcheck disable=SC2016
+          php -r '$s = function_exists("opcache_get_status") ? opcache_get_status(false) : false; echo "opcache.enable_cli=", var_export(ini_get("opcache.enable_cli"), true), " jit=", var_export(ini_get("opcache.jit"), true), " opcache_enabled=", var_export($s["opcache_enabled"] ?? null, true), " jit_enabled=", var_export($s["jit"]["enabled"] ?? null, true), " jit_on=", var_export($s["jit"]["on"] ?? null, true), PHP_EOL;'
 
           args=()
           if [ "$PARALLEL" = "true" ]; then

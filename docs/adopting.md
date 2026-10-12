@@ -209,9 +209,9 @@ Two more opt-in speedups, both off by default:
 
 - `parallel: true` runs `pest --parallel`, one process per CPU (`processes: N` to override).
   Each process gets its own database, `<db>_test_N`, which works because CI connects as MySQL
-  root. **It turns PHP warnings — deprecations, notices — into failures**, so a suite that is
-  green serially can go red. Fix the warnings; do not switch it off quietly. A private repo's
-  runner has 2 vCPU (a public repo's has 4), so the gain is smaller than on a laptop.
+  root. **It turns PHP warnings into failures**, so a suite that is green serially can go red
+  (deprecations are printed but do not fail). Fix the warnings; do not switch it off quietly. A private repo's
+  runner has 2 vCPU (a public repo's has 4), so the gain is smaller than on a laptop — on one private app the Tests step went from 580 s to 422 s.
 - `opcache: true` enables opcache for the PHP CLI, which the runner leaves off. It measured about
   13% off a Feature-test subset on one app. JIT stays off on purpose.
 
