@@ -33,6 +33,20 @@ name: jiannius laravel ci
 # migrations, tests, playbook:check — is skipped, and runs on push instead.
 # That only holds if the caller also triggers on `push` to its integration
 # branch. Without it, merged code is never tested until it reaches main.
+#
+# FASTER SUITES. Two opt-in speedups, both OFF by default so a caller that
+# sets neither runs exactly what it ran before:
+#
+#   - `parallel` runs `pest --parallel`. Off because it changes behaviour, not
+#     just speed: every process gets its own database (`<db>_test_N`), and
+#     Pest's parallel mode turns PHP warnings — deprecations, notices — into
+#     failures, so a suite that is green serially can go red. That wants a
+#     person to look at it, not a silent upgrade of every repo in the fleet.
+#   - `opcache` enables opcache for the PHP CLI, which setup-php leaves off.
+#
+# Playwright browser caching was considered and deliberately NOT added:
+# `--with-deps` still apt-installs the system libraries on every run, and
+# restoring the ~150MB browser cache saves about 10 seconds at most.
 # ---------------------------------------------------------------------------
 
 on:
@@ -75,6 +89,38 @@ on:
           Pest throws PlaywrightNotInstalledException and the suite fails.
           Requires `playwright` in the project's package.json devDependencies;
           npm ci is run for you even when build-assets is false.
+        type: boolean
+        default: false
+      parallel:
+        description: >-
+          Run the suite with `pest --parallel`. Off by default, because it is a
+          behaviour change as well as a speedup. Each process gets its own
+          database named `<db>_test_N` (e.g. testing_test_1), created and
+          dropped by Laravel — which works here because CI connects as MySQL
+          root. The "Migrations apply from empty" step still runs serially
+          against `testing` first. `pest --parallel` turns PHP warnings
+          (deprecations, notices) into failures, so a suite that is green
+          serially can go red: fix the warnings, don't turn this off quietly.
+          Pest defaults to one process per CPU, and ubuntu-latest has 2 vCPU on
+          a private repo (4 on a public one), so expect a smaller gain than on
+          a laptop. See `processes`.
+        type: boolean
+        default: false
+      processes:
+        description: >-
+          Number of parallel processes, passed as `--processes=N`. 0 lets Pest
+          pick one per CPU. Ignored unless `parallel` is true.
+        type: number
+        default: 0
+      opcache:
+        description: >-
+          Enable opcache for the PHP CLI. setup-php leaves it off, so every
+          test process recompiles the framework from source; on one app this
+          took about 13% off a Feature-test subset. JIT is pinned off because
+          setup-php pre-sets opcache.jit=1235 with a 256M buffer, so
+          opcache.enable_cli alone would also switch JIT on — which measured no
+          gain and carries crash risk. Off by default so nothing changes for a
+          caller that does not ask for it.
         type: boolean
         default: false
       check-schema:
@@ -285,6 +331,9 @@ jobs:
           tools: composer:v2
           extensions: pdo_mysql
           coverage: none
+          # Empty unless `opcache` is set, which leaves setup-php's defaults
+          # untouched. jit=off is explained on the `opcache` input.
+          ini-values: ${{ inputs.opcache && 'opcache.enable_cli=1, opcache.jit=off' || '' }}
 
       # Every step from here to the dependency audit is skipped on a lean run.
       - name: Composer cache location
@@ -363,9 +412,26 @@ jobs:
         if: steps.scope.outputs.full == 'true' && inputs.check-schema
         run: php artisan migrate:fresh --seed --no-interaction
 
+      # With no new inputs set this is plain `vendor/bin/pest`. The arguments
+      # are built in bash so the flags exist only when asked for. `${args[@]+...}`
+      # keeps an empty array from tripping `set -u` on older bash.
       - name: Tests
         if: steps.scope.outputs.full == 'true'
-        run: vendor/bin/pest
+        env:
+          PARALLEL: ${{ inputs.parallel }}
+          PROCESSES: ${{ inputs.processes }}
+        run: |
+          set -euo pipefail
+
+          args=()
+          if [ "$PARALLEL" = "true" ]; then
+            args+=(--parallel)
+            if [ "$PROCESSES" -gt 0 ]; then
+              args+=("--processes=$PROCESSES")
+            fi
+          fi
+
+          vendor/bin/pest ${args[@]+"${args[@]}"}
 
       # Boost has no verify mode. This is the gate that makes the standard stick.
       # Exit 1 = stale, run boost:update and commit. Exit 2 = misconfigured.
