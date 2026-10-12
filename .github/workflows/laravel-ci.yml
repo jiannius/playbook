@@ -425,10 +425,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # TEMP (e2e verification, remove before merge)
-          # shellcheck disable=SC2016
-          php -r '$s = function_exists("opcache_get_status") ? opcache_get_status(false) : false; echo "opcache.enable_cli=", var_export(ini_get("opcache.enable_cli"), true), " jit=", var_export(ini_get("opcache.jit"), true), " opcache_enabled=", var_export($s["opcache_enabled"] ?? null, true), " jit_enabled=", var_export($s["jit"]["enabled"] ?? null, true), " jit_on=", var_export($s["jit"]["on"] ?? null, true), PHP_EOL;'
-
           args=()
           if [ "$PARALLEL" = "true" ]; then
             args+=(--parallel)
