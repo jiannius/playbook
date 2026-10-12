@@ -212,7 +212,7 @@ Five files in `.github/workflows/`. Consumers **call** them, never copy them.
 
 | File | Trigger | For |
 |---|---|---|
-| `laravel-ci.yml` | `workflow_call` | Applications. Jobs: `guard` (base-ref) and `ci` |
+| `laravel-ci.yml` | `workflow_call` | Applications. One job, `ci`; the base-ref guard is its first step |
 | `package-ci.yml` | `workflow_call` | Packages — Testbench, no artisan. Matrixes lowest/highest deps |
 | `ci.yml` | push + PR | playbook's own CI, calling `package-ci.yml` — dogfooding |
 | `major-ref.yml` | `v*.*.*` tag push | Moves the `v1` **branch** to the new release |
@@ -231,10 +231,14 @@ matches on the *name* of the workflow that ran, not its filename. An app whose `
 silently, because a trigger that never fires reports nothing. The app skeleton is exactly this
 shape. Replace the contents of `tests.yml`, leave `name: tests` alone.
 
-Inputs on `laravel-ci.yml`: `php-version` (8.4), `node-version` (22), `base-branch` (dev),
-`build-assets`, `browser-tests`, `check-schema`, `check-playbook`. `check-schema` and
-`check-playbook` default true; a repo not yet onboarded to playbook sets `check-playbook: false`
-rather than failing every build.
+Inputs on `laravel-ci.yml`, with defaults: `php-version` (8.4), `node-version` (22),
+`base-branch` (dev), `database` (mysql), `mysql-version` (8.0), `build-assets` (true),
+`browser-tests` (false), `check-schema` (true), `check-playbook` (true), `check-secrets` (true),
+`check-audit` (true), `full-suite-on-pr` (true), `apt-packages` (empty), `parallel` (false),
+`processes` (0, one per CPU), `opcache` (false) and `timeout-minutes` (30). A repo not yet
+onboarded to playbook sets `check-playbook: false` rather than failing every build. `parallel` and
+`opcache` are opt-in speedups; `parallel` turns PHP warnings into failures, so see "Short on CI
+minutes?" in [adopting.md](adopting.md) before setting it.
 
 **`browser-tests` defaults false, and an app with `tests/Browser/` must turn it on.** Pest's
 browser plugin drives a real Chromium, which the runner does not have; without the download the
