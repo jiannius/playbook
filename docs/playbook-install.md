@@ -215,7 +215,7 @@ Five files in `.github/workflows/`. Consumers **call** them, never copy them.
 | `laravel-ci.yml` | `workflow_call` | Applications. One job, `ci`; the base-ref guard is its first step |
 | `package-ci.yml` | `workflow_call` | Packages — Testbench, no artisan. Matrixes lowest/highest deps |
 | `ci.yml` | push + PR | playbook's own CI, calling `package-ci.yml` — dogfooding |
-| `major-ref.yml` | `v*.*.*` tag push | Moves the `v1` **branch** to the new release |
+| `major-ref.yml` | `v*.*.*` tag push | Moves the major **branch** (`v0` today) to the new release |
 | `claude.yml` | `workflow_call` | Claude on a subscription token: reviews each PR when it opens, answers `@claude`. Skips green without the token. playbook runs it on itself via `dogfood-claude.yml` |
 
 ```yaml
