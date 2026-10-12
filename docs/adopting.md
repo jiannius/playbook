@@ -169,6 +169,8 @@ jobs:
       check-audit: false     # only while clearing existing advisories — with an issue to come back
       # apt-packages: poppler-utils  # only if tests shell out to a system binary the runner lacks
       # full-suite-on-pr: false  # short on CI minutes? read the next section before setting this
+      # parallel: true  # faster suite, but PHP warnings become failures — read the next section first
+      # opcache: true  # enable opcache for the CLI; about 13% off one app's suite, no behaviour change
     secrets: inherit
 ```
 
@@ -202,6 +204,16 @@ jobs:
       full-suite-on-pr: false
     secrets: inherit
 ```
+
+Two more opt-in speedups, both off by default:
+
+- `parallel: true` runs `pest --parallel`, one process per CPU (`processes: N` to override).
+  Each process gets its own database, `<db>_test_N`, which works because CI connects as MySQL
+  root. **It turns PHP warnings into failures**, so a suite that is green serially can go red
+  (deprecations are printed but do not fail). Fix the warnings; do not switch it off quietly. A private repo's
+  runner has 2 vCPU (a public repo's has 4), so the gain is smaller than on a laptop — on one private app the Tests step went from 580 s to 422 s.
+- `opcache: true` enables opcache for the PHP CLI, which the runner leaves off. It measured about
+  13% off a Feature-test subset on one app. JIT stays off on purpose.
 
 Delete a separate lint workflow if you have one — `pint --test` runs as a step here, and a second
 job costs a whole billed minute to repeat it.
