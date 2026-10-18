@@ -409,7 +409,8 @@ class CheckCommand extends Command
 
     /**
      * The files directly inside a managed directory, by name. A subdirectory is not a file
-     * playbook wrote, and the sync leaves it alone, so the check does too.
+     * playbook wrote, and a dotfile (.DS_Store) is not an agent; the sync leaves both alone,
+     * so the check does too.
      *
      * @return list<string>
      */
@@ -423,7 +424,8 @@ class CheckCommand extends Command
 
         return array_values(array_filter(
             array_diff(scandir($path) ?: [], ['.', '..']),
-            fn (string $entry): bool => is_link($path.DIRECTORY_SEPARATOR.$entry) || is_file($path.DIRECTORY_SEPARATOR.$entry)
+            fn (string $entry): bool => ! str_starts_with($entry, '.')
+                && (is_link($path.DIRECTORY_SEPARATOR.$entry) || is_file($path.DIRECTORY_SEPARATOR.$entry))
         ));
     }
 

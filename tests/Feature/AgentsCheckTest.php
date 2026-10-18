@@ -215,6 +215,30 @@ it('reports STALE, and does not follow it, when a managed directory is a symlink
     'rules, disabled' => [AgentCatalog::RULES_DIR, false],
 ]);
 
+it('ignores a dotfile such as .DS_Store in a managed directory', function () {
+    $dir = $this->fakeProject(boostJson());
+    agentsGuidelinesCurrent($dir, $this->renderedGuidelines());
+
+    file_put_contents($dir.'/.claude/agents/playbook/.DS_Store', 'finder');
+    file_put_contents($dir.'/.claude/rules/playbook/.DS_Store', 'finder');
+
+    $this->artisan('playbook:check')->assertExitCode(CheckCommand::OK);
+});
+
+it('says disabled, not RETIRED, when disabled and only a dotfile is left behind', function () {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+    agentsGuidelinesCurrent($dir, $this->renderedGuidelines());
+
+    mkdir($dir.'/.claude/agents/playbook', 0755, true);
+    file_put_contents($dir.'/.claude/agents/playbook/.DS_Store', 'finder');
+
+    config(['playbook.agents.enabled' => false]);
+
+    $this->artisan('playbook:check')
+        ->assertExitCode(CheckCommand::OK)
+        ->expectsOutputToContain('disabled');
+});
+
 /** @return array<string, string> skill name => absolute path to its SKILL.md */
 function shippedAgentSkillSources(): array
 {

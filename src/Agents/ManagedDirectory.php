@@ -54,7 +54,9 @@ final class ManagedDirectory
         // point: Debugger.md is not an expected name, so it goes first and the write recreates
         // it under the right case.
         foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..' || array_key_exists($entry, $expected)) {
+            // Dotfiles (.DS_Store, .gitkeep) are the system's or the editor's, never an
+            // agent. playbook:check ignores them for the same reason.
+            if (str_starts_with($entry, '.') || array_key_exists($entry, $expected)) {
                 continue;
             }
 

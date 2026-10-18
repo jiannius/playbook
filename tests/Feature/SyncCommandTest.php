@@ -269,6 +269,64 @@ it('replaces a differently-cased managed file instead of writing through it and 
         ->and(array_diff($entries, ['.', '..']))->toHaveCount(11);
 });
 
+it('leaves a file in .claude/rules/ outside playbook/ alone', function () {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+
+    mkdir($dir.'/.claude/rules', 0755, true);
+    file_put_contents($dir.'/.claude/rules/mine.md', "Our own rule.\n");
+
+    $this->artisan('playbook:sync')->assertExitCode(0);
+    $this->artisan('playbook:sync')->assertExitCode(0);
+
+    expect(file_get_contents($dir.'/.claude/rules/mine.md'))->toBe("Our own rule.\n");
+
+    config(['playbook.agents.enabled' => false]);
+
+    $this->artisan('playbook:sync')->assertExitCode(0);
+
+    expect(file_get_contents($dir.'/.claude/rules/mine.md'))->toBe("Our own rule.\n")
+        ->and($dir.'/.claude/rules/playbook')->not->toBeDirectory();
+});
+
+it('warns about a subdirectory inside a managed directory and leaves it alone', function () {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+
+    mkdir($dir.'/.claude/agents/playbook/drafts', 0755, true);
+    file_put_contents($dir.'/.claude/agents/playbook/drafts/wip.md', "Work in progress.\n");
+
+    $this->artisan('playbook:sync')
+        ->assertExitCode(0)
+        ->expectsOutputToContain('is a directory inside a playbook-managed directory');
+
+    expect(file_get_contents($dir.'/.claude/agents/playbook/drafts/wip.md'))->toBe("Work in progress.\n")
+        ->and($dir.'/.claude/agents/playbook/debugger.md')->toBeFile();
+
+    // And when disabled: the files go, the directory that is not ours stays, so does its parent.
+    config(['playbook.agents.enabled' => false]);
+
+    $this->artisan('playbook:sync')->assertExitCode(0);
+
+    expect(file_get_contents($dir.'/.claude/agents/playbook/drafts/wip.md'))->toBe("Work in progress.\n")
+        ->and($dir.'/.claude/agents/playbook/debugger.md')->not->toBeFile();
+});
+
+it('leaves a dotfile such as .DS_Store inside a managed directory alone', function (bool $enabled) {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+
+    foreach ([AgentCatalog::AGENTS_DIR, AgentCatalog::RULES_DIR] as $managed) {
+        mkdir($dir.'/'.$managed, 0755, true);
+        file_put_contents($dir.'/'.$managed.'/.DS_Store', 'finder');
+    }
+
+    config(['playbook.agents.enabled' => $enabled]);
+
+    $this->artisan('playbook:sync')->assertExitCode(0);
+
+    foreach ([AgentCatalog::AGENTS_DIR, AgentCatalog::RULES_DIR] as $managed) {
+        expect(file_get_contents($dir.'/'.$managed.'/.DS_Store'))->toBe('finder');
+    }
+})->with([true, false]);
+
 /** A directory outside the fixture project, removed after the test. */
 function outsideDirectory(): string
 {
