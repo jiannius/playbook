@@ -16,6 +16,7 @@ read now than as a red build later.
 php -r 'echo json_decode(file_get_contents("composer.json"))->require->{"laravel/framework"}, PHP_EOL;'
 composer audit --locked --format=summary
 git check-ignore -v .claude/skills 2>/dev/null || echo 'not ignored — good'
+git check-ignore -v .claude/agents .claude/rules 2>/dev/null || echo 'not ignored — good'
 git branch -a | grep -E '(^|/)dev$' || echo 'no dev branch'
 ls tests/Browser 2>/dev/null || echo 'no browser tests'
 grep -A1 '"laravel/boost"' composer.lock | head -2
@@ -26,6 +27,7 @@ grep -A1 '"laravel/boost"' composer.lock | head -2
 | `laravel/framework` below `^13.0` | **Stop.** playbook requires `illuminate/support ^13.0`. Upgrade first; there is no partial adoption |
 | Advisories reported | You will want `check-audit: false` for the first PR, plus an issue to clear them |
 | `.claude/skills` is ignored | Step 3 is not optional for you. This is the most common finding |
+| `.claude/agents` or `.claude/rules` is ignored | Same as above: step 3 is not optional, and the task agents never reach a clone |
 | No `dev` branch | Pass `base-branch: main` in step 5 |
 | `tests/Browser` exists | Pass `browser-tests: true`, or the suite dies on `PlaywrightNotInstalledException` |
 | `laravel/boost` locked below 2.10.3 | Step 1's `-W` will move it. playbook requires `^2.10.3`; without `-W` you get an older playbook |
@@ -34,12 +36,12 @@ grep -A1 '"laravel/boost"' composer.lock | head -2
 ## 1. Install the package
 
 ```bash
-composer require --dev "jiannius/playbook:^0.5" -W
+composer require --dev "jiannius/playbook:^0.6" -W
 ```
 
 **Name the constraint.** Left bare, `composer require` can write `"*"` — the first host app got
 exactly that — and then any breaking release lands on the next `composer update` without anyone
-noticing. Check `composer.json` afterwards and make sure it says `^0.5`, not `*`.
+noticing. Check `composer.json` afterwards and make sure it says `^0.6`, not `*`.
 
 **The `-W` is required, not tidiness.** `composer require` does a *partial* update and cannot move a
 package already pinned in your `composer.lock`. If `laravel/boost` is locked below 2.10.3 — the first
@@ -82,30 +84,32 @@ and **silently no skills**, on every `boost:update`, forever, with success repor
 `skills` key is the on-switch, not the inventory — `boost:update` installs whatever it discovers as
 long as the list is non-empty. `playbook:check` exits 2 if you get this wrong.
 
-## 3. Stop gitignoring the skills
+## 3. Stop gitignoring the skills, agents and rules
 
 Check first:
 
 ```bash
-git check-ignore -v .claude/skills
+git check-ignore -v .claude/skills .claude/agents .claude/rules
 ```
 
 If that prints a rule, fix it. `.gitignore` lines like `/.claude` are common and they break the
 entire delivery mechanism: Boost writes the skills, git discards them, and a teammate who clones the
-repo gets none of them. The QA skill in particular exists to reach someone who never runs composer.
+repo gets none of them. The same goes for the task agents in `.claude/agents/` and the routing rule
+in `.claude/rules/`, which `boost:update` writes the same way. The QA skill in particular exists to
+reach someone who never runs composer.
 
 Ignore only the per-person files:
 
 ```gitignore
-# Per-person Claude state only. NOT .claude/skills/ — those are committed on purpose,
-# so a teammate who only ever runs `git clone` still gets them.
+# Per-person Claude state only. NOT .claude/skills/, .claude/agents/ or .claude/rules/ — those
+# are committed on purpose, so a teammate who only ever runs `git clone` still gets them.
 /.claude/settings.local.json
 /.claude/worktrees
 /.claude/projects
 ```
 
-`playbook:check` exits 2 on an ignored-and-untracked skills path. Ignored *and* force-added is
-accepted — a tracked file is committed whatever the pattern says.
+`playbook:check` exits 2 on an ignored-and-untracked skills, agents or rules path. Ignored *and*
+force-added is accepted — a tracked file is committed whatever the pattern says.
 
 **Commit `boost.json` too.** If it is ignored, a fresh worktree or CI checkout has none, so
 `boost:update` stops at "Please set up Boost with boost:install first" and `playbook:check` has
@@ -118,7 +122,8 @@ php artisan boost:update
 php artisan playbook:check     # expect: exit 0
 ```
 
-Then commit both halves — the agent files **and** `.claude/skills/`.
+Then commit every half — the agent files, `.claude/skills/`, **and** `.claude/agents/` with
+`.claude/rules/`, where the task agents and their routing rule land.
 
 Boost 2.10 and later send the guidelines to `AGENTS.md` for every agent, Claude Code included, and playbook
 requires 2.10.3. Claude Code skips `AGENTS.md` whenever a `CLAUDE.md` exists, so make the one-time move:
@@ -143,7 +148,9 @@ What the exit codes mean:
 |---|---|---|
 | 0 | Everything current | — |
 | 1 | Stale: agent file behind, or an installed skill missing or drifted | `boost:update`, commit |
+| 1 | A task agent or the routing rule is missing, drifted, symlinked or retired | `boost:update`, commit |
 | 2 | Misconfigured: no `skills` list, ignored skills path, Boost not set up, or `CLAUDE.md` not importing `AGENTS.md` | Steps 2–4. `boost:update` cannot fix this |
+| 2 | A CLASH (one of your own agents has the same `name` as one of ours), or gitignored agents or rules | Opt out of ours or delete yours; stop ignoring `.claude/agents` and `.claude/rules` |
 
 ## 5. Call the shared CI
 
@@ -293,8 +300,26 @@ To switch it on, three things, in this order:
 
 Never a token shared without an owner. The secret is never pasted into chat, an issue or a PR.
 
+## Opting out of a task agent
+
+The task agents are on for every repo with Claude Code enabled. Three ways to change that:
+
+- **Repo-wide.** In `config/playbook.php` (publish it with
+  `php artisan vendor:publish --tag=playbook-config`), set `agents.except` to a list of names, for
+  example `['data-import']`, or `agents.enabled` to `false` for none. Run `boost:update`; the
+  opted-out files are removed from `.claude/agents/playbook/`. This is not in `boost.json`,
+  because an interactive `boost:install` deletes that file.
+- **Replacing one.** Opt out of it as above, then commit your own `.claude/agents/<name>.md`
+  anywhere outside `playbook/`. Without the opt-out, two agents with the same `name` is a CLASH and
+  `playbook:check` exits 2.
+- **For yourself only.** Deny `Agent(<name>)` in your own settings. To cap the model they run on,
+  set `CLAUDE_CODE_SUBAGENT_MODEL` together with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`.
+
 ## Afterwards
 
+- The task agents are in `.claude/agents/playbook/`, with their routing rule in
+  `.claude/rules/playbook/`. Each teammate restarts Claude Code once after their first pull: a
+  new agents directory is only picked up at startup.
 - The three repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-wrap-up` — are
   now in the session for anyone working in this repo, from `.claude/skills/`. The marketplace
   copies of the first two are mirrors of the same text and can be uninstalled once every repo a
