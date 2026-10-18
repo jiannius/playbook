@@ -499,7 +499,9 @@ playbook does the copying.
 - **Targets** are `.claude/agents/playbook/` and `.claude/rules/playbook/`. The directory is the
   managed boundary, on the same model as Boost's `.ai/rules/boost/`: everything inside is
   playbook's and is rewritten or removed to match the package, and everything outside belongs to
-  the project and is never written or removed.
+  the project and is never written or removed. Sync does not follow a symlink to get around that: if
+  a managed directory is a symlink, or sits under one that leads outside `.claude/`, sync touches
+  nothing, warns "left alone", and `playbook:check` reports it STALE until it is a real directory.
 - **The files are regular copies, not symlinks.** In Phase 0 on Claude Code 2.1.301 a symlinked
   file in `.claude/rules/playbook/` was not loaded, while regular files were. Sync writes regular
   files and replaces any symlink it finds at a target path.
@@ -530,6 +532,7 @@ writer reads:
 | A file is absent | MISSING | 1 |
 | A file differs from its source | STALE | 1 |
 | A managed file is a symlink | STALE, "Claude Code does not load symlinked project files" | 1 |
+| A managed directory is a symlink, or resolves outside `.claude/` | STALE, "Replace it with a real directory" | 1 |
 | A file in a managed directory that is not expected (retired, opted out, or anything when disabled) | RETIRED | 1 |
 | A project agent has the same frontmatter `name` as one of ours | CLASH | 2 |
 | A managed path is gitignored and untracked | IGNORED | 2 |

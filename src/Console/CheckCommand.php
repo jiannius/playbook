@@ -7,6 +7,7 @@ namespace Jiannius\Playbook\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Jiannius\Playbook\Agents\AgentCatalog;
+use Jiannius\Playbook\Agents\ManagedDirectory;
 use Laravel\Boost\Contracts\SupportsGuidelines;
 use Laravel\Boost\Contracts\SupportsSkills;
 use Laravel\Boost\Install\Agents\Agent;
@@ -283,7 +284,8 @@ class CheckCommand extends Command
             $present = 0;
 
             foreach (array_keys($sets) as $dir) {
-                $present += count($this->managedFiles($dir));
+                // A symlinked managed directory is something to report, not "nothing installed".
+                $present += ManagedDirectory::refusal(base_path($dir)) !== null ? 1 : count($this->managedFiles($dir));
             }
 
             if ($present === 0) {
@@ -295,6 +297,21 @@ class CheckCommand extends Command
 
         foreach ($sets as $dir => $set) {
             $ignoredReported = false;
+
+            // Never follow a symlinked managed directory. Sync leaves it alone too, so
+            // boost:update will not fix this: the person has to replace the link.
+            $refusal = ManagedDirectory::refusal(base_path($dir));
+
+            if ($refusal !== null) {
+                $stale[] = sprintf(
+                    '%s %s. playbook does not follow it and Claude Code does not load symlinked project files. Replace it with a real directory, then run boost:update.',
+                    $dir,
+                    $refusal
+                );
+                $this->components->twoColumnDetail($set['label'].' <fg=gray>'.$dir.'</>', '<fg=red>STALE</>');
+
+                continue;
+            }
 
             foreach ($set['expected'] as $name => $source) {
                 $target = base_path($dir.DIRECTORY_SEPARATOR.$name);

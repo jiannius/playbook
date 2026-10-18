@@ -8,7 +8,9 @@ namespace Jiannius\Playbook\Agents;
  * Brings one directory to exactly the set of files playbook ships into it.
  *
  * The directory is the managed boundary: every file directly inside belongs to playbook and
- * is rewritten or removed to match, and nothing outside it is ever touched.
+ * is rewritten or removed to match, and nothing outside it is ever touched. That includes
+ * what a symlink points at: a managed directory that is a symlink, or that sits under one
+ * leading outside .claude/, is left alone entirely.
  *
  * Files are copied, never symlinked. Claude Code 2.1.301 does not load a symlinked file
  * from .claude/rules/, so a symlink would be silently inert.
@@ -31,6 +33,12 @@ final class ManagedDirectory
     {
         $files = [];
         $warnings = [];
+
+        $refusal = self::refusal($dir);
+
+        if ($refusal !== null) {
+            return ['files' => $files, 'warnings' => [sprintf('%s %s, left alone.', $dir, $refusal)]];
+        }
 
         if ($expected === [] && ! is_dir($dir) && ! is_link($dir)) {
             return ['files' => $files, 'warnings' => $warnings];
@@ -86,6 +94,59 @@ final class ManagedDirectory
         }
 
         return ['files' => $files, 'warnings' => $warnings];
+    }
+
+    /**
+     * Why sync will not touch this directory, or null when it is safe to manage.
+     *
+     * Following a symlink would write the agents into, and prune foreign files from, whatever
+     * it points at. So the directory itself may not be a link, and wherever it resolves (a
+     * symlinked parent counts) must still be inside .claude/.
+     */
+    public static function refusal(string $dir): ?string
+    {
+        if (is_link($dir)) {
+            return 'is a symlink';
+        }
+
+        $boundary = self::resolve(base_path('.claude'));
+        $resolved = self::resolve($dir);
+
+        if ($boundary === null || $resolved === null) {
+            return 'cannot be resolved (a broken symlink in its path)';
+        }
+
+        if ($resolved !== $boundary && ! str_starts_with($resolved, $boundary.DIRECTORY_SEPARATOR)) {
+            return 'resolves outside .claude/ (a parent directory is a symlink)';
+        }
+
+        return null;
+    }
+
+    /**
+     * The real path of a directory that may not exist yet: the nearest existing ancestor
+     * resolved, with the missing tail put back. Null when the path runs into a broken symlink.
+     */
+    private static function resolve(string $path): ?string
+    {
+        $tail = [];
+
+        while (($real = realpath($path)) === false) {
+            if (is_link($path)) {
+                return null;
+            }
+
+            $parent = dirname($path);
+
+            if ($parent === $path) {
+                return null;
+            }
+
+            array_unshift($tail, basename($path));
+            $path = $parent;
+        }
+
+        return implode(DIRECTORY_SEPARATOR, [rtrim($real, DIRECTORY_SEPARATOR), ...$tail]);
     }
 
     private function delete(string $path): void

@@ -180,6 +180,41 @@ it('reports OK and says disabled when disabled and nothing is installed', functi
         ->expectsOutputToContain('disabled');
 });
 
+it('reports STALE, and does not follow it, when a managed directory is a symlink', function (string $managed, bool $enabled) {
+    $dir = $this->fakeProject(boostJson());
+    agentsGuidelinesCurrent($dir, $this->renderedGuidelines());
+
+    // The link points at a copy with exactly the right bytes, so only the link itself can fail.
+    $outside = sys_get_temp_dir().'/playbook-outside-'.bin2hex(random_bytes(6));
+    rename($dir.'/'.$managed, $outside);
+    symlink($outside, $dir.'/'.$managed);
+
+    $before = collect(glob($outside.'/*'))
+        ->mapWithKeys(fn (string $path): array => [$path => file_get_contents($path)])
+        ->all();
+
+    config(['playbook.agents.enabled' => $enabled]);
+
+    try {
+        $this->artisan('playbook:check')
+            ->assertExitCode(CheckCommand::STALE)
+            ->expectsOutputToContain('is a symlink');
+
+        $after = collect(glob($outside.'/*'))
+            ->mapWithKeys(fn (string $path): array => [$path => file_get_contents($path)])
+            ->all();
+
+        expect($after)->toBe($before)->and(is_link($dir.'/'.$managed))->toBeTrue();
+    } finally {
+        exec('rm -rf '.escapeshellarg($outside));
+    }
+})->with([
+    'agents, enabled' => [AgentCatalog::AGENTS_DIR, true],
+    'agents, disabled' => [AgentCatalog::AGENTS_DIR, false],
+    'rules, enabled' => [AgentCatalog::RULES_DIR, true],
+    'rules, disabled' => [AgentCatalog::RULES_DIR, false],
+]);
+
 /** @return array<string, string> skill name => absolute path to its SKILL.md */
 function shippedAgentSkillSources(): array
 {

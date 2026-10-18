@@ -195,3 +195,73 @@ it('warns about an unknown name in except and still exits 0', function () {
         ->assertExitCode(0)
         ->expectsOutputToContain('no-such-agent');
 });
+
+/**
+ * A symlinked managed directory is never followed. Following it would write the agents into
+ * whatever it points at and prune that directory's other files as if they were playbook's.
+ */
+it('leaves a symlinked managed directory and its target alone', function (string $managed, bool $enabled) {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+    $outside = outsideDirectory();
+
+    file_put_contents($outside.'/foreign.md', "Not playbook's.\n");
+    mkdir(dirname($dir.'/'.$managed), 0755, true);
+    symlink($outside, $dir.'/'.$managed);
+
+    config(['playbook.agents.enabled' => $enabled]);
+
+    $this->artisan('playbook:sync')
+        ->assertExitCode(0)
+        ->expectsOutputToContain('is a symlink, left alone');
+
+    expect(is_link($dir.'/'.$managed))->toBeTrue()
+        ->and(file_get_contents($outside.'/foreign.md'))->toBe("Not playbook's.\n")
+        ->and(array_values(array_diff(scandir($outside), ['.', '..'])))->toBe(['foreign.md']);
+})->with([
+    'agents, enabled' => [AgentCatalog::AGENTS_DIR, true],
+    'agents, disabled' => [AgentCatalog::AGENTS_DIR, false],
+    'rules, enabled' => [AgentCatalog::RULES_DIR, true],
+    'rules, disabled' => [AgentCatalog::RULES_DIR, false],
+]);
+
+it('leaves a managed directory alone when a symlinked parent leads outside .claude', function (string $parent, bool $enabled) {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+    $outside = outsideDirectory();
+
+    file_put_contents($outside.'/foreign.md', "Not playbook's.\n");
+    is_dir($dir.'/.claude') || mkdir($dir.'/.claude', 0755, true);
+    symlink($outside, $dir.'/.claude/'.$parent);
+
+    config(['playbook.agents.enabled' => $enabled]);
+
+    $this->artisan('playbook:sync')
+        ->assertExitCode(0)
+        ->expectsOutputToContain('left alone');
+
+    expect(array_values(array_diff(scandir($outside), ['.', '..'])))->toBe(['foreign.md'])
+        ->and(file_get_contents($outside.'/foreign.md'))->toBe("Not playbook's.\n");
+})->with([
+    'agents, enabled' => ['agents', true],
+    'agents, disabled' => ['agents', false],
+    'rules, enabled' => ['rules', true],
+    'rules, disabled' => ['rules', false],
+]);
+
+/** A directory outside the fixture project, removed after the test. */
+function outsideDirectory(): string
+{
+    $path = sys_get_temp_dir().'/playbook-outside-'.bin2hex(random_bytes(6));
+    mkdir($path, 0755, true);
+
+    $GLOBALS['playbook_outside_dirs'][] = $path;
+
+    return $path;
+}
+
+afterEach(function () {
+    foreach ($GLOBALS['playbook_outside_dirs'] ?? [] as $path) {
+        exec('rm -rf '.escapeshellarg($path));
+    }
+
+    $GLOBALS['playbook_outside_dirs'] = [];
+});
