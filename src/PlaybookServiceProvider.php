@@ -2,7 +2,10 @@
 
 namespace Jiannius\Playbook;
 
+use Illuminate\Console\Events\CommandFinished;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Jiannius\Playbook\Agents\SyncAfterBoost;
 use Jiannius\Playbook\Console\CheckCommand;
 use Jiannius\Playbook\Console\SyncCommand;
 
@@ -48,6 +51,8 @@ class PlaybookServiceProvider extends ServiceProvider
             $this->publishes([
                 dirname(__DIR__).'/config/playbook.php' => config_path('playbook.php'),
             ], 'playbook-config');
+
+            Event::listen(CommandFinished::class, [SyncAfterBoost::class, 'handle']);
         }
     }
 }
