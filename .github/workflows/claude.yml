@@ -89,7 +89,10 @@ name: jiannius claude
 #   passed, and that is what puts the action in its reply-to-a-mention mode.
 #   Comment events always run from the DEFAULT branch, so `@claude` replies only
 #   work once the caller file has been merged there; review-on-open runs from
-#   the pull request's own branch and works before that.
+#   the pull request's own branch and works before that. Task agents are
+#   switched off in this mode (`--disallowedTools "Agent"`). A repo's
+#   `.claude/agents/` pin their own models, and a mention must not start an
+#   Opus agent on the CI seat.
 #
 # Two separate action steps, each with its own `if:`, because the action picks
 # its mode by whether `prompt` is present. Relying on an empty string counting as
@@ -237,3 +240,4 @@ jobs:
           claude_args: >-
             --model ${{ inputs.model }}
             --max-turns ${{ inputs.max-turns }}
+            --disallowedTools "Agent"

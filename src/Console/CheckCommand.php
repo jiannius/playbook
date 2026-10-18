@@ -6,6 +6,8 @@ namespace Jiannius\Playbook\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Jiannius\Playbook\Agents\AgentCatalog;
+use Jiannius\Playbook\Agents\ManagedDirectory;
 use Laravel\Boost\Contracts\SupportsGuidelines;
 use Laravel\Boost\Contracts\SupportsSkills;
 use Laravel\Boost\Install\Agents\Agent;
@@ -16,7 +18,7 @@ use Laravel\Boost\Support\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
-#[AsCommand('playbook:check', 'Verify this repo\'s agent files and installed skills match the current Jiannius playbook')]
+#[AsCommand('playbook:check', 'Verify this repo\'s agent files, installed skills and task agents match the current Jiannius playbook')]
 class CheckCommand extends Command
 {
     /** @var string */
@@ -102,15 +104,28 @@ class CheckCommand extends Command
         // repo turned up with .claude/ in its .gitignore.
         $skills = $this->checkSkills($config, $detector);
 
-        if ($skills['broken'] !== []) {
+        // The task agents travel the way the skills do: copied into a committed directory by
+        // boost:update, so they fail the same three ways. A project agent that shares a name
+        // with one of ours is a fourth.
+        $taskAgents = $this->checkAgents($config);
+
+        if ($skills['broken'] !== [] || $taskAgents['broken'] !== []) {
             $this->newLine();
-            $this->components->error('The skills this package ships cannot reach this repo.');
-            $this->components->bulletList($skills['broken']);
+
+            if ($skills['broken'] !== []) {
+                $this->components->error('The skills this package ships cannot reach this repo.');
+                $this->components->bulletList($skills['broken']);
+            }
+
+            if ($taskAgents['broken'] !== []) {
+                $this->components->error('The task agents this package ships cannot be used in this repo.');
+                $this->components->bulletList($taskAgents['broken']);
+            }
 
             return self::BROKEN;
         }
 
-        if ($stale->isEmpty() && $skills['stale'] === []) {
+        if ($stale->isEmpty() && $skills['stale'] === [] && $taskAgents['stale'] === []) {
             return self::OK;
         }
 
@@ -129,7 +144,12 @@ class CheckCommand extends Command
             $this->components->bulletList($skills['stale']);
         }
 
-        $this->components->bulletList(['Fix: run [php artisan boost:update] and commit the result.']);
+        if ($taskAgents['stale'] !== []) {
+            $this->components->error(sprintf('%d task agent file(s) are behind %s.', count($taskAgents['stale']), self::PACKAGE));
+            $this->components->bulletList($taskAgents['stale']);
+        }
+
+        $this->components->bulletList(['Fix: run [php artisan boost:update] and commit the result, including .claude/agents/ and .claude/rules/.']);
 
         return self::STALE;
     }
@@ -220,6 +240,193 @@ class CheckCommand extends Command
         }
 
         return ['broken' => $broken, 'stale' => $stale];
+    }
+
+    /**
+     * Verify the task agents and their routing rule: present, faithful to the source, a
+     * regular file, nothing left over from a retired agent, and no project agent that shares
+     * a name with one of ours.
+     *
+     * Reads AgentCatalog, as the writer does, so the two cannot disagree. Writes nothing.
+     *
+     * @return array{broken: list<string>, stale: list<string>}
+     */
+    protected function checkAgents(Config $config): array
+    {
+        $broken = [];
+        $stale = [];
+
+        if (! in_array('claude_code', $config->getAgents(), true)) {
+            $this->components->twoColumnDetail('Task agents', '<fg=gray>skipped: Claude Code not enabled</>');
+
+            return ['broken' => $broken, 'stale' => $stale];
+        }
+
+        if (AgentCatalog::shipped() === []) {
+            return [
+                'broken' => [sprintf('%s ships no agents. Is resources/claude/agents/ present in the installed package?', self::PACKAGE)],
+                'stale' => [],
+            ];
+        }
+
+        $rendered = [];
+
+        foreach (AgentCatalog::rendered() as $name => $source) {
+            $rendered[$name.'.md'] = $source;
+        }
+
+        $sets = [
+            AgentCatalog::AGENTS_DIR => ['label' => 'Task agent', 'expected' => $rendered],
+            AgentCatalog::RULES_DIR => ['label' => 'Task-agent rule', 'expected' => AgentCatalog::rules()],
+        ];
+
+        if (! AgentCatalog::enabled()) {
+            $present = 0;
+
+            foreach (array_keys($sets) as $dir) {
+                // A symlinked managed directory is something to report, not "nothing installed".
+                $present += ManagedDirectory::refusal(base_path($dir)) !== null ? 1 : count($this->managedFiles($dir));
+            }
+
+            if ($present === 0) {
+                $this->components->twoColumnDetail('Task agents', '<fg=gray>disabled</>');
+
+                return ['broken' => $broken, 'stale' => $stale];
+            }
+        }
+
+        foreach ($sets as $dir => $set) {
+            $ignoredReported = false;
+
+            // Never follow a symlinked managed directory. Sync leaves it alone too, so
+            // boost:update will not fix this: the person has to replace the link.
+            $refusal = ManagedDirectory::refusal(base_path($dir));
+
+            if ($refusal !== null) {
+                $stale[] = sprintf(
+                    '%s %s. playbook does not follow it and Claude Code does not load symlinked project files. Replace it with a real directory, then run boost:update.',
+                    $dir,
+                    $refusal
+                );
+                $this->components->twoColumnDetail($set['label'].' <fg=gray>'.$dir.'</>', '<fg=red>STALE</>');
+
+                continue;
+            }
+
+            foreach ($set['expected'] as $name => $source) {
+                $target = base_path($dir.DIRECTORY_SEPARATOR.$name);
+                $shown = $dir.'/'.$name;
+                $label = $set['label'].' <fg=gray>'.$shown.'</>';
+
+                if (is_link($target)) {
+                    $stale[] = $shown.' is a symlink; Claude Code does not load symlinked project files. Run boost:update.';
+                    $this->components->twoColumnDetail($label, '<fg=red>STALE</>');
+
+                    continue;
+                }
+
+                if (! is_file($target)) {
+                    $stale[] = $shown.' is not installed.';
+                    $this->components->twoColumnDetail($label, '<fg=red>MISSING</>');
+
+                    continue;
+                }
+
+                $installed = (string) file_get_contents($target);
+                $packaged = (string) file_get_contents($source);
+
+                if ($installed !== $packaged) {
+                    $stale[] = sprintf(
+                        '%s differs from the packaged source (installed %d bytes, packaged %d).',
+                        $shown,
+                        strlen($installed),
+                        strlen($packaged)
+                    );
+                    $this->components->twoColumnDetail($label, '<fg=red>STALE</>');
+
+                    continue;
+                }
+
+                if ($this->isUnreachableByClone($target)) {
+                    // One message per directory: the same ignore rule hides every file in it.
+                    if (! $ignoredReported) {
+                        $broken[] = sprintf('%s is gitignored and untracked — Boost writes it, git discards it, and a teammate who clones this repo gets nothing.', $dir);
+                        $broken[] = 'Fix: stop ignoring '.$dir.' — ignore only the per-person files under .claude/ — then commit it.';
+                        $ignoredReported = true;
+                    }
+
+                    $this->components->twoColumnDetail($label, '<fg=red>IGNORED</>');
+
+                    continue;
+                }
+
+                $this->components->twoColumnDetail($label, '<fg=green>current</>');
+            }
+
+            foreach ($this->managedFiles($dir) as $name) {
+                if (array_key_exists($name, $set['expected'])) {
+                    continue;
+                }
+
+                $shown = $dir.'/'.$name;
+
+                $stale[] = $shown.' is not shipped by '.self::PACKAGE.' (retired, or opted out). Run boost:update.';
+                $this->components->twoColumnDetail($set['label'].' <fg=gray>'.$shown.'</>', '<fg=red>RETIRED</>');
+            }
+        }
+
+        if (AgentCatalog::enabled()) {
+            $renderedNames = AgentCatalog::rendered();
+            $except = AgentCatalog::except();
+
+            foreach (AgentCatalog::projectAgentFiles() as $path) {
+                $name = AgentCatalog::frontmatterName($path);
+
+                if ($name === null) {
+                    continue;
+                }
+
+                $shown = $this->relativePath($path);
+
+                if (array_key_exists($name, $renderedNames)) {
+                    $broken[] = sprintf(
+                        '%1$s has name %2$s, the same as a playbook agent. Claude Code will load one of the two at random. Opt out of %2$s in config/playbook.php to keep yours, or delete it.',
+                        $shown,
+                        $name
+                    );
+                    $this->components->twoColumnDetail('Project agent <fg=gray>'.$shown.'</>', '<fg=red>CLASH</>');
+                } elseif (in_array($name, $except, true)) {
+                    $this->components->twoColumnDetail(
+                        'Project agent <fg=gray>'.$shown.'</>',
+                        '<fg=gray>'.$name.' overridden by the project</>'
+                    );
+                }
+            }
+        }
+
+        return ['broken' => $broken, 'stale' => $stale];
+    }
+
+    /**
+     * The files directly inside a managed directory, by name. A subdirectory is not a file
+     * playbook wrote, and a dotfile (.DS_Store) is not an agent; the sync leaves both alone,
+     * so the check does too.
+     *
+     * @return list<string>
+     */
+    protected function managedFiles(string $dir): array
+    {
+        $path = base_path($dir);
+
+        if (! is_dir($path)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_diff(scandir($path) ?: [], ['.', '..']),
+            fn (string $entry): bool => ! str_starts_with($entry, '.')
+                && (is_link($path.DIRECTORY_SEPARATOR.$entry) || is_file($path.DIRECTORY_SEPARATOR.$entry))
+        ));
     }
 
     /**

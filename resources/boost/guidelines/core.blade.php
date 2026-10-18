@@ -7,10 +7,12 @@ These rules apply to every Jiannius project regardless of stack. They arrive fro
 
 Never run against, modify, or expose production systems or production data.
 
-- Migrations, seeders, and tests run against **local** environments only. Check the connection
-  before running anything that writes.
+- Migrations, seeders, and tests run against **local** environments only. Data investigation and
+  data backfills may also run against **staging**, but
+  only when you were explicitly given it by the person who asked for the task. Check the connection
+  before running anything that writes, and stop if it is production.
 - Deploys and releases to production are a maintainer's explicit action. Never initiate one.
-- Reading code or logs to diagnose a problem is fine. Changing a running system is not.
+- Reading code or logs to diagnose a problem is fine. Changing a running production system is not.
 
 If a task appears to require production access, stop and say so rather than finding a way.
 

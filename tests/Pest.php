@@ -53,3 +53,29 @@ function boostBlock(string $inner): string
 {
     return "<laravel-boost-guidelines>\n".$inner."\n\n</laravel-boost-guidelines>\n";
 }
+
+/**
+ * Make the guidelines half of playbook:check current, so a test about another half is not
+ * also failing this one.
+ */
+function agentsGuidelinesCurrent(string $dir, string $rendered, string $file = 'CLAUDE.md'): void
+{
+    file_put_contents($dir.'/'.$file, boostBlock($rendered));
+}
+
+/** Run a version-control command inside a fixture project. */
+function agentsGit(string $dir, string $args): void
+{
+    exec('git -C '.escapeshellarg($dir).' '.$args.' 2>&1');
+}
+
+/** A project-owned agent file under .claude/agents/ with the given frontmatter name. */
+function projectAgent(string $dir, string $relative, string $name): string
+{
+    $path = $dir.'/.claude/agents/'.$relative;
+
+    is_dir(dirname($path)) || mkdir(dirname($path), 0755, true);
+    file_put_contents($path, "---\nname: {$name}\ndescription: Mine.\n---\n\nProject-owned agent {$name}.\n");
+
+    return $path;
+}

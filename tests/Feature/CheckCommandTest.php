@@ -60,7 +60,21 @@ it('writes nothing, even when stale', function () {
     $before = "# CLAUDE.md\n\nUntouched.\n";
     $dir = $this->fakeProject(boostJson(), claudeMd: $before);
 
+    // A missing agent and a drifted one, so the agents section has something to repair.
+    unlink($dir.'/.claude/agents/playbook/debugger.md');
+    file_put_contents($dir.'/.claude/agents/playbook/auditor.md', "Drifted.\n");
+
+    $agentsBefore = collect(glob($dir.'/.claude/agents/playbook/*'))
+        ->mapWithKeys(fn (string $path): array => [$path => file_get_contents($path)])
+        ->all();
+
     $this->artisan('playbook:check')->assertExitCode(CheckCommand::STALE);
 
     expect(file_get_contents($dir.'/CLAUDE.md'))->toBe($before);
+
+    $agentsAfter = collect(glob($dir.'/.claude/agents/playbook/*'))
+        ->mapWithKeys(fn (string $path): array => [$path => file_get_contents($path)])
+        ->all();
+
+    expect($agentsAfter)->toBe($agentsBefore);
 });

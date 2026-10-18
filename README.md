@@ -2,8 +2,9 @@
 
 The Jiannius engineering standard, and the machinery that installs and enforces it.
 
-Delivery is **Laravel Boost's job**, not ours. Boost already writes to nine agents
-(Claude Code, Codex, Cursor, Copilot, Amp, Junie, Kiro, Gemini, OpenCode) and already
+Delivery is **Laravel Boost's job**, not ours. Boost already writes to thirteen agents
+(Amp, Antigravity, Claude Code, Codex, Copilot, Cursor, Factory, Grok Build, Junie, Kiro,
+OpenCode, Pi, Zed) and already
 discovers guidelines shipped inside composer packages. Playbook ships content in that
 format and adds only the enforcement Boost lacks. See
 [`docs/playbook-install.md`](docs/playbook-install.md).
@@ -15,8 +16,9 @@ format and adds only the enforcement Boost lacks. See
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
+| **Task agents** | Eleven Claude Code subagents and the rule that routes work to them, written into .claude/agents/playbook/ and .claude/rules/playbook/ by boost:update |
 | **Session wrap-up** | Closing a session cleanly: what Claude Code's exit leaves behind — leftover files, switched settings, unsettled git, the handoff |
-| **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills have drifted, and when they are gitignored so a clone would never see them |
+| **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills or task agents have drifted, and when they are gitignored so a clone would never see them |
 | **Reusable CI** | `uses: jiannius/playbook/.github/workflows/…@v0` |
 | **Hooks** | Claude Code hook definitions, rendered into `.claude/settings.json` |
 | **Adoption** | [`docs/adopting.md`](docs/adopting.md) — six steps to put an existing app on the standard, and the traps real repos actually had |
@@ -115,7 +117,8 @@ for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
 `playbook:check` and its tests; five reusable CI workflows; the three repo-scoped skills at
-`resources/boost/skills/`. On Packagist since 2026-08-30. The current version is whichever is
+`resources/boost/skills/`; the eleven task agents at `resources/claude/` and `playbook:sync`, which
+writes them and which `boost:update` runs for you. On Packagist since 2026-08-30. The current version is whichever is
 latest on the [releases page](https://github.com/jiannius/playbook/releases). The `v0` branch
 follows each release, so workflows called at `@v0` stay current.
 

@@ -1,10 +1,10 @@
 # Delivery and enforcement — specification
 
-How the standard reaches a repo, what Laravel Boost already handles, and the three
+How the standard reaches a repo, what Laravel Boost already handles, and the four
 gaps `playbook` fills.
 
-Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows and
-the three skills exist; the package resolves from Packagist; and the app skeleton installs it and
+Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows, the
+three skills and the Claude Code task agents exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target
@@ -67,7 +67,7 @@ internal lint and test tasks.
 ## What playbook therefore does *not* build
 
 - **No renderer for rules.** Ship `resources/boost/guidelines/*.blade.php`, exactly as
-  `atom` does. `boost:update` delivers it to all nine agents.
+  `atom` does. `boost:update` delivers it to all thirteen agents.
 - **No agent registry.** Boost's is better and maintained by Laravel.
 - **No `AGENTS.md` / `CLAUDE.md` symlink.** Boost writes both files independently as separate
   targets with the same composed content. A symlink would conflict — Boost would write through
@@ -131,7 +131,7 @@ Two other 2.10 changes the tests had to absorb: package discovery now reads **`c
 
 ## What playbook *does* build
 
-Three gaps, in priority order.
+Four gaps, in priority order.
 
 ### 1. `playbook:check` — the CI gate
 
@@ -274,7 +274,7 @@ Two consequences worth knowing:
   sqlite. Those are real bugs rather than CI noise — though a repo mid-migration can set
   `database: sqlite` to defer them.
 
-**`claude.yml` is switched on by a secret, not by a release.** Three decisions are load-bearing.
+**`claude.yml` is switched on by a secret, not by a release.** Four decisions are load-bearing.
 
 - **The token gate.** `CLAUDE_CODE_OAUTH_TOKEN` is an optional secret. When it is missing the job
   logs "not set, skipping", skips the action steps and ends green, so the workflow can be called
@@ -290,7 +290,11 @@ Two consequences worth knowing:
 - **One reviewer, and it is Anthropic's.** The review step runs the official `code-review` plugin
   instead of a prompt of ours. Jiannius rules reach it through each repo's own `CLAUDE.md` /
   `AGENTS.md`, which this package already fills. An earlier idea kept `pr-reviewer` and
-  `/code-review` side by side; they duplicated each other, so there is one.
+  `/code-review` side by side; they duplicated each other, so there is one. That decision is about
+  CI. In a session, `pr-reviewer` is a shipped task agent.
+- **No task agents in `@claude` mode.** The reply step passes `--disallowedTools "Agent"`. A repo's
+  `.claude/agents/` pin their own models, and a mention must not start an Opus agent on the CI
+  seat. The review step is unchanged. This reaches every `@v0` caller as soon as `v0` moves.
 
 The two modes use two separate action steps, each with its own `if:`, because the action chooses
 its mode by whether `prompt` is present and an empty string is not something to lean on.
@@ -476,6 +480,95 @@ Two ceilings to accept before adopting:
 2. **It binds Claude Code only.** A teammate in Cursor is not gated. Any org-wide safety rule needs
    a CI check as well — the portable half, and the only half that holds for every editor.
 
+### 4. Task agents — built
+
+Eleven Claude Code subagents (architect, auditor, data-backfill, data-import, data-investigator,
+debugger, dependency-updater, plan-executor, pr-fixer, pr-reviewer, qa-tester) and one rule that
+says when to hand work to each. Each agent pins its own model and effort, which is the reason to
+ship them at all.
+
+**Why playbook writes these files itself.** Boost has no subagent support, and `vendor/` is inert
+(verified for skills under "Permissions" above). The files have to be copied into the repo, so
+playbook does the copying.
+
+**Where they live.**
+
+- **Sources** are in `resources/claude/agents/` and `resources/claude/rules/`. Not under
+  `resources/boost/`, which is Boost's discovery namespace: a file there would be picked up by
+  Boost's scanner as something it should render.
+- **Targets** are `.claude/agents/playbook/` and `.claude/rules/playbook/`. The directory is the
+  managed boundary, on the same model as Boost's `.ai/rules/boost/`: everything inside is
+  playbook's and is rewritten or removed to match the package, and everything outside belongs to
+  the project and is never written or removed. Sync does not follow a symlink to get around that: if
+  a managed directory is a symlink, or sits under one that leads outside `.claude/`, sync touches
+  nothing, warns "left alone", and `playbook:check` reports it STALE until it is a real directory.
+- **The files are regular copies, not symlinks.** As observed on Claude Code 2.1.301, a symlinked
+  file in `.claude/rules/playbook/` was not loaded, while regular files were. Sync writes regular
+  files and replaces any symlink it finds at a target path.
+
+**How they get there.** `php artisan playbook:sync` writes them. `boost:update` and
+`boost:install` run it when they finish, through a `CommandFinished` listener, so nothing is added
+to `post-update-cmd`. The listener has four rules, each there because of something observed:
+`CommandFinished` fires for more than `boost:update`. During `composer run-script post-update-cmd`
+it also fired for `test` (exit 1), from Boost's own `artisan test --list-tests` subprocess, and for
+`vendor:publish`.
+
+1. Match the command name exactly: `boost:update` or `boost:install`, no prefix or pattern.
+2. Act only on exit code 0.
+3. Be re-entrant-safe: a static flag stops a nested event from starting a second sync.
+4. Call the sync service directly, never `Artisan::call()`, which would start nested command events.
+
+A failure in the sync prints one error line and does not fail `composer update`;
+`playbook:check` in CI catches whatever is missing.
+
+**What `playbook:check` verifies.** The agents and the rule, from the same `AgentCatalog` the
+writer reads:
+
+| State | Row | Exit |
+|---|---|---|
+| Claude Code not enabled in `boost.json` | skipped | 0 |
+| `agents.enabled` is false and nothing is installed | disabled | 0 |
+| The package ships no agents | broken | 2 |
+| A file is absent | MISSING | 1 |
+| A file differs from its source | STALE | 1 |
+| A managed file is a symlink | STALE, "Claude Code does not load symlinked project files" | 1 |
+| A managed directory is a symlink, or resolves outside `.claude/` | STALE, "Replace it with a real directory" | 1 |
+| A file in a managed directory that is not expected (retired, opted out, or anything when disabled) | RETIRED | 1 |
+| A project agent has the same frontmatter `name` as one of ours | CLASH | 2 |
+| A managed path is gitignored and untracked | IGNORED | 2 |
+| An opted-out name with a project file present | overridden by the project | 0 |
+
+Identity comes from the `name` in the frontmatter, not the path, and when a project agent and a
+user agent share a name the project copy wins (both observed on Claude Code 2.1.301). So a project file
+anywhere under `.claude/agents/` with the same `name` as one of ours is a real clash, and is why
+the check reads frontmatter instead of comparing filenames.
+
+**Opting out.**
+
+- **A repo:** `config/playbook.php` carries `agents.enabled` (false renders nothing, removes the
+  managed directories and checks nothing) and `agents.except` (a list of agent names). It is
+  not in `boost.json`, because an interactive `boost:install` deletes that file.
+- **One person:** deny `Agent(<name>)` in their own settings.
+- **A model cap:** set `CLAUDE_CODE_SUBAGENT_MODEL` with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`.
+- **Removing `claude_code` from `boost.json`** stops the sync and the check, but does not remove
+  what was already written: the agents and the rule stay in `.claude/` until someone deletes them
+  by hand.
+
+**Overriding one agent.** Opt out of it in `config/playbook.php`, then commit your own
+`.claude/agents/<name>.md` anywhere outside `playbook/`. The check reports it as overridden by the
+project rather than as a clash.
+
+**The routing rule is Claude-only.** `.claude/rules/playbook/task-agents.md` is the table of which
+agent takes which task. There is no `AGENTS.md` version and no agent set for other tools; see the
+exception recorded under "Settled".
+
+**Data agents and staging.** `data-investigator` and `data-backfill` may run against staging, only
+when the person who asked for the task explicitly gave it. Production stays banned. The core guideline carries the
+same sentence, so the guideline and both agents change together.
+
+**Each teammate restarts Claude Code once after the first pull.** A brand-new agents directory is
+only picked up at startup.
+
 ## The enforcement ladder
 
 Why the design is shaped this way. Every rule sits on a rung, and picking the rung matters more
@@ -508,7 +601,7 @@ using a different editor.
 - The skeletons require only `jiannius/playbook`; Boost arrives transitively.
 - Playbook therefore pins Boost's version for the whole fleet. That is the point: one place decides
   which Boost everyone is on. The cost is that a breaking Boost release blocks on a playbook update.
-- Skeleton `post-update-cmd` gains one line after `boost:update`, once there is a command to call.
+- `boost:update` now runs `playbook:sync` itself, so `post-update-cmd` needs no extra line.
 
 ## Settled
 
@@ -517,8 +610,11 @@ using a different editor.
   with no repo. The audiences do not overlap. Accepted cost: the mirror is a manual paste with no
   staleness check. *(2026-08-28)*
 - **Custom content lives outside any managed block, always.** *(2026-08-28)*
-- **No vendor-specific work.** `AGENTS.md` is the general target and Boost already writes it for
-  eight of its nine agents. *(2026-08-28)*
+- **No vendor-specific work — with one deliberate exception, the task agents.** `AGENTS.md` is the
+  general target, and Boost writes it for every agent it supports. The task agents and their
+  routing rule are Claude Code only (`.claude/agents/playbook/`, `.claude/rules/playbook/`): what
+  makes them worth shipping is a pinned model and effort per agent, and those are Claude settings
+  with no cross-vendor equivalent. *(2026-08-28; agents exception 2026-10-16)*
 - **Test enforcement is ours, not Boost's install-time answer.** Boost asks whether to enforce
   tests during `boost:install` and writes the resulting block into the agent files, but
   `boost.json` does not persist the answer. So every `composer update` runs `boost:update`, which
