@@ -48,6 +48,28 @@ final class ManagedDirectory
             mkdir($dir, 0755, true);
         }
 
+        // Prune before writing. On a case-insensitive filesystem (macOS) an existing
+        // Debugger.md is the same file as the debugger.md about to be written, so pruning
+        // afterwards would delete what was just written. The exact-name comparison is the
+        // point: Debugger.md is not an expected name, so it goes first and the write recreates
+        // it under the right case.
+        foreach (scandir($dir) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..' || array_key_exists($entry, $expected)) {
+                continue;
+            }
+
+            $path = $dir.DIRECTORY_SEPARATOR.$entry;
+
+            if (! is_link($path) && is_dir($path)) {
+                $warnings[] = sprintf('%s is a directory inside a playbook-managed directory. Left alone.', $path);
+
+                continue;
+            }
+
+            unlink($path);
+            $files[$entry] = self::REMOVED;
+        }
+
         foreach ($expected as $name => $source) {
             $target = $dir.DIRECTORY_SEPARATOR.$name;
             $bytes = (string) file_get_contents($source);
@@ -70,23 +92,6 @@ final class ManagedDirectory
             file_put_contents($target, $bytes);
 
             $files[$name] = $existed ? self::UPDATED : self::WRITTEN;
-        }
-
-        foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..' || array_key_exists($entry, $expected)) {
-                continue;
-            }
-
-            $path = $dir.DIRECTORY_SEPARATOR.$entry;
-
-            if (! is_link($path) && is_dir($path)) {
-                $warnings[] = sprintf('%s is a directory inside a playbook-managed directory. Left alone.', $path);
-
-                continue;
-            }
-
-            unlink($path);
-            $files[$entry] = self::REMOVED;
         }
 
         if ($expected === [] && (scandir($dir) ?: []) === ['.', '..']) {

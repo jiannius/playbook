@@ -247,6 +247,28 @@ it('leaves a managed directory alone when a symlinked parent leads outside .clau
     'rules, disabled' => ['rules', false],
 ]);
 
+/**
+ * macOS and Windows filesystems are case-insensitive: Debugger.md and debugger.md are one file
+ * there. Pruning after the writes deleted what had just been written. On a case-sensitive
+ * filesystem the same test checks the stray name is simply removed.
+ */
+it('replaces a differently-cased managed file instead of writing through it and pruning it', function () {
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
+
+    mkdir($dir.'/.claude/agents/playbook', 0755, true);
+    file_put_contents($dir.'/.claude/agents/playbook/Debugger.md', "Someone's old copy.\n");
+
+    $this->artisan('playbook:sync')->assertExitCode(0);
+
+    $entries = scandir($dir.'/.claude/agents/playbook');
+
+    expect($entries)->toContain('debugger.md')
+        ->not->toContain('Debugger.md')
+        ->and(file_get_contents($dir.'/.claude/agents/playbook/debugger.md'))
+        ->toBe(file_get_contents(AgentCatalog::shipped()['debugger']))
+        ->and(array_diff($entries, ['.', '..']))->toHaveCount(11);
+});
+
 /** A directory outside the fixture project, removed after the test. */
 function outsideDirectory(): string
 {
