@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Console\Events\CommandFinished;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Event;
 use Jiannius\Playbook\Agents\AgentSync;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -21,9 +22,10 @@ use Symfony\Component\Console\Output\OutputInterface;
  * container bindings (RuleRepository, ProjectManager, GuidelineConfig) do not exist.
  * Registering the commands by hand fails on the first missing binding, and rebuilding
  * Boost's wiring in Testbench would test the fixture rather than this listener. The
- * dispatch tests above cover the same contract: the event Laravel fires, the exact command
+ * dispatch tests below cover the same contract: the event Laravel fires, the exact command
  * names, the exit code, re-entrancy and containment.
  */
+
 /** Dispatch the event Laravel fires when an artisan command ends. */
 function finished(string $command, int $exitCode = 0): BufferedOutput
 {
@@ -108,6 +110,10 @@ it('runs the sync once, however many events its own work raises', function () {
 
 it('starts no nested artisan command, so no extra command events fire', function () {
     $this->fakeProject(boostJson(), installAgents: false);
+
+    // Testbench does not forward Symfony's console events to Laravel's dispatcher, so without
+    // this a nested Artisan::call() would finish silently and the test could never fail.
+    $this->app->make(Kernel::class)->rerouteSymfonyCommandEvents();
 
     $seen = [];
 
