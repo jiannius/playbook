@@ -67,7 +67,7 @@ internal lint and test tasks.
 ## What playbook therefore does *not* build
 
 - **No renderer for rules.** Ship `resources/boost/guidelines/*.blade.php`, exactly as
-  `atom` does. `boost:update` delivers it to all nine agents.
+  `atom` does. `boost:update` delivers it to all thirteen agents.
 - **No agent registry.** Boost's is better and maintained by Laravel.
 - **No `AGENTS.md` / `CLAUDE.md` symlink.** Boost writes both files independently as separate
   targets with the same composed content. A symlink would conflict — Boost would write through
