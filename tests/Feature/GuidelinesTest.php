@@ -26,7 +26,7 @@ it('composes the rules that must not silently disappear', function () {
         ->toContain('Production is off-limits')
         ->toContain('Never run against, modify, or expose production')
         ->toContain('may also run against **staging**')
-        ->toContain('only when you were explicitly given it')
+        ->toContain('only when you were explicitly given it by the person who asked for the task')
         ->toContain('Changing a running production system is not')
         ->toContain('Secrets and customer data')
         ->toContain('CI must stay inside the free allowance');

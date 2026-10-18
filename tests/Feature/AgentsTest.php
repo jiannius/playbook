@@ -147,7 +147,7 @@ it('allows staging for the two data agents, and never production', function () {
 
     foreach (['data-backfill', 'data-investigator'] as $name) {
         expect((string) file_get_contents($agents[$name]))
-            ->toContain('local or staging (only if explicitly given), never production');
+            ->toContain('local or staging (only if explicitly given by the person who asked for the task), never production');
     }
 });
 

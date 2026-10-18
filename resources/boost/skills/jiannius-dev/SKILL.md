@@ -73,7 +73,7 @@ both run there, so you do not need to remember them. What CI cannot decide for y
 
 ## Reviewing a PR / code (review mode)
 
-If a `pr-reviewer` agent is available, hand the review to it — the list below is what it applies.
+If a `pr-reviewer` agent is available, hand the review to it unless you are `pr-reviewer` — the list below is what it applies.
 
 When asked to review, check the diff against Jiannius conventions and report findings (complements the built-in `/code-review` — add Jiannius-specific notes):
 

@@ -502,7 +502,7 @@ playbook does the copying.
   the project and is never written or removed. Sync does not follow a symlink to get around that: if
   a managed directory is a symlink, or sits under one that leads outside `.claude/`, sync touches
   nothing, warns "left alone", and `playbook:check` reports it STALE until it is a real directory.
-- **The files are regular copies, not symlinks.** In Phase 0 on Claude Code 2.1.301 a symlinked
+- **The files are regular copies, not symlinks.** As observed on Claude Code 2.1.301, a symlinked
   file in `.claude/rules/playbook/` was not loaded, while regular files were. Sync writes regular
   files and replaces any symlink it finds at a target path.
 
@@ -539,7 +539,7 @@ writer reads:
 | An opted-out name with a project file present | overridden by the project | 0 |
 
 Identity comes from the `name` in the frontmatter, not the path, and when a project agent and a
-user agent share a name the project copy wins (both observed in Phase 0). So a project file
+user agent share a name the project copy wins (both observed on Claude Code 2.1.301). So a project file
 anywhere under `.claude/agents/` with the same `name` as one of ours is a real clash, and is why
 the check reads frontmatter instead of comparing filenames.
 
@@ -550,6 +550,9 @@ the check reads frontmatter instead of comparing filenames.
   not in `boost.json`, because an interactive `boost:install` deletes that file.
 - **One person:** deny `Agent(<name>)` in their own settings.
 - **A model cap:** set `CLAUDE_CODE_SUBAGENT_MODEL` with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`.
+- **Removing `claude_code` from `boost.json`** stops the sync and the check, but does not remove
+  what was already written: the agents and the rule stay in `.claude/` until someone deletes them
+  by hand.
 
 **Overriding one agent.** Opt out of it in `config/playbook.php`, then commit your own
 `.claude/agents/<name>.md` anywhere outside `playbook/`. The check reports it as overridden by the
@@ -560,7 +563,7 @@ agent takes which task. There is no `AGENTS.md` version and no agent set for oth
 exception recorded under "Settled".
 
 **Data agents and staging.** `data-investigator` and `data-backfill` may run against staging, only
-when it was explicitly given for the task. Production stays banned. The core guideline carries the
+when the person who asked for the task explicitly gave it. Production stays banned. The core guideline carries the
 same sentence, so the guideline and both agents change together.
 
 **Each teammate restarts Claude Code once after the first pull.** A brand-new agents directory is
