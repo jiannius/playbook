@@ -23,7 +23,7 @@ function projectAgent(string $dir, string $relative, string $name): string
 }
 
 it('writes all eleven agents, byte for byte, and exits 0', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
 
@@ -38,7 +38,7 @@ it('writes all eleven agents, byte for byte, and exits 0', function () {
 });
 
 it('writes regular files, never symlinks', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
 
@@ -51,7 +51,7 @@ it('writes regular files, never symlinks', function () {
 });
 
 it('replaces a symlink at a target path with a regular file', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
     $source = AgentCatalog::shipped()['debugger'];
 
     mkdir($dir.'/.claude/agents/playbook', 0755, true);
@@ -67,7 +67,7 @@ it('replaces a symlink at a target path with a regular file', function () {
 });
 
 it('changes nothing on a second run', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
 
@@ -87,7 +87,7 @@ it('changes nothing on a second run', function () {
 });
 
 it('overwrites an edited managed file with the source', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
 
@@ -100,7 +100,7 @@ it('overwrites an edited managed file with the source', function () {
 });
 
 it('removes a file playbook no longer ships from the managed directory', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
 
@@ -112,7 +112,7 @@ it('removes a file playbook no longer ships from the managed directory', functio
 });
 
 it('removes an opted-out agent that was written earlier, and does not write it again', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(0);
     expect($dir.'/.claude/agents/playbook/data-import.md')->toBeFile();
@@ -126,7 +126,7 @@ it('removes an opted-out agent that was written earlier, and does not write it a
 });
 
 it('leaves a project override byte-identical when its name is opted out', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
     $mine = projectAgent($dir, 'data-import.md', 'data-import');
     $before = file_get_contents($mine);
 
@@ -141,7 +141,7 @@ it('leaves a project override byte-identical when its name is opted out', functi
 });
 
 it('never modifies a project file outside playbook/, whether or not it clashes', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
     $unrelated = projectAgent($dir, 'mine.md', 'mine');
     $clashing = projectAgent($dir, 'clash.md', 'debugger');
     $beforeUnrelated = file_get_contents($unrelated);
@@ -155,7 +155,7 @@ it('never modifies a project file outside playbook/, whether or not it clashes',
 });
 
 it('detects a clash in a nested folder, warns, exits 0 and still writes ours', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
     projectAgent($dir, 'review/mine.md', 'debugger');
 
     $this->artisan('playbook:sync')
@@ -167,7 +167,7 @@ it('detects a clash in a nested folder, warns, exits 0 and still writes ours', f
 });
 
 it('removes the managed directory when disabled, and leaves project files alone', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
     $mine = projectAgent($dir, 'mine.md', 'mine');
     $before = file_get_contents($mine);
 
@@ -183,7 +183,7 @@ it('removes the managed directory when disabled, and leaves project files alone'
 });
 
 it('writes nothing when Claude Code is not enabled in boost.json', function () {
-    $dir = $this->fakeProject(boostJson(['agents' => ['codex']]));
+    $dir = $this->fakeProject(boostJson(['agents' => ['codex']]), installAgents: false);
 
     $this->artisan('playbook:sync')
         ->assertExitCode(0)
@@ -193,13 +193,13 @@ it('writes nothing when Claude Code is not enabled in boost.json', function () {
 });
 
 it('exits 2 when boost is not set up', function () {
-    $this->fakeProject(boostJson: null);
+    $this->fakeProject(boostJson: null, installAgents: false);
 
     $this->artisan('playbook:sync')->assertExitCode(2);
 });
 
 it('warns about an unknown name in except and still exits 0', function () {
-    $this->fakeProject(boostJson());
+    $this->fakeProject(boostJson(), installAgents: false);
 
     config(['playbook.agents.except' => ['no-such-agent']]);
 

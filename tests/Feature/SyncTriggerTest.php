@@ -33,7 +33,7 @@ function finished(string $command, int $exitCode = 0): BufferedOutput
 }
 
 it('renders the agents when boost:update succeeds', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished('boost:update');
 
@@ -41,7 +41,7 @@ it('renders the agents when boost:update succeeds', function () {
 });
 
 it('renders the agents when boost:install succeeds', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished('boost:install');
 
@@ -49,7 +49,7 @@ it('renders the agents when boost:install succeeds', function () {
 });
 
 it('renders nothing when boost:update fails', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished('boost:update', 1);
 
@@ -57,7 +57,7 @@ it('renders nothing when boost:update fails', function () {
 });
 
 it('renders nothing for the test subprocess Boost starts, which fails with exit 1', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished('test', 1);
 
@@ -65,7 +65,7 @@ it('renders nothing for the test subprocess Boost starts, which fails with exit 
 });
 
 it('renders nothing for vendor:publish', function () {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished('vendor:publish');
 
@@ -73,7 +73,7 @@ it('renders nothing for vendor:publish', function () {
 });
 
 it('renders nothing for a command name that only resembles boost:update', function (string $command) {
-    $dir = $this->fakeProject(boostJson());
+    $dir = $this->fakeProject(boostJson(), installAgents: false);
 
     finished($command);
 
@@ -81,7 +81,7 @@ it('renders nothing for a command name that only resembles boost:update', functi
 })->with(['boost:updater', 'boost:update:extra', '', 'BOOST:UPDATE']);
 
 it('runs the sync once, however many events its own work raises', function () {
-    $this->fakeProject(boostJson());
+    $this->fakeProject(boostJson(), installAgents: false);
 
     $double = new class extends AgentSync
     {
@@ -107,7 +107,7 @@ it('runs the sync once, however many events its own work raises', function () {
 });
 
 it('starts no nested artisan command, so no extra command events fire', function () {
-    $this->fakeProject(boostJson());
+    $this->fakeProject(boostJson(), installAgents: false);
 
     $seen = [];
 
@@ -121,7 +121,7 @@ it('starts no nested artisan command, so no extra command events fire', function
 });
 
 it('contains a failure in the sync and reports it', function () {
-    $this->fakeProject(boostJson());
+    $this->fakeProject(boostJson(), installAgents: false);
 
     $this->app->instance(AgentSync::class, new class extends AgentSync
     {

@@ -37,7 +37,7 @@ abstract class TestCase extends BaseTestCase
      *
      * @param  array<string, mixed>|null  $boostJson  null writes no boost.json at all
      */
-    protected function fakeProject(?array $boostJson, ?string $claudeMd = null, bool $installSkills = true): string
+    protected function fakeProject(?array $boostJson, ?string $claudeMd = null, bool $installSkills = true, bool $installAgents = true): string
     {
         $dir = sys_get_temp_dir().'/playbook-test-'.bin2hex(random_bytes(6));
         mkdir($dir.'/vendor/jiannius', 0755, true);
@@ -69,6 +69,10 @@ abstract class TestCase extends BaseTestCase
             $this->installSkills($dir);
         }
 
+        if ($installAgents) {
+            $this->installAgents($dir);
+        }
+
         $this->app->setBasePath($dir);
 
         // The package defaults Claude Code's guidelines to AGENTS.md (see BoostDefaultsTest). These
@@ -98,6 +102,31 @@ abstract class TestCase extends BaseTestCase
             file_put_contents($target.'/SKILL.md', $contents ?? file_get_contents($source.'/SKILL.md'));
 
             $installed[$name] = $target.'/SKILL.md';
+        }
+
+        return $installed;
+    }
+
+    /**
+     * Copy the packaged task agents and their rule into .claude/ the way playbook:sync would,
+     * so a fixture testing another half of playbook:check is not also failing this one.
+     *
+     * @param  string|null  $contents  replaces the bytes of every file written, to fake drift
+     * @return array<string, string> filename => the installed path
+     */
+    protected function installAgents(string $dir, ?string $contents = null): array
+    {
+        $installed = [];
+
+        foreach (['agents' => '.claude/agents/playbook', 'rules' => '.claude/rules/playbook'] as $kind => $relative) {
+            foreach (glob(dirname(__DIR__).'/resources/claude/'.$kind.'/*.md') ?: [] as $source) {
+                $target = $dir.'/'.$relative.'/'.basename($source);
+
+                is_dir(dirname($target)) || mkdir(dirname($target), 0755, true);
+                file_put_contents($target, $contents ?? file_get_contents($source));
+
+                $installed[basename($source)] = $target;
+            }
         }
 
         return $installed;

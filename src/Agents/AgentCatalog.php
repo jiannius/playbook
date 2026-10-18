@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Jiannius\Playbook\Agents;
 
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -89,6 +92,41 @@ final class AgentCatalog
     public static function unknownExclusions(): array
     {
         return array_values(array_diff(self::except(), array_keys(self::shipped())));
+    }
+
+    /**
+     * Every `*.md` under .claude/agents/ that playbook does not own.
+     *
+     * @return list<string>
+     */
+    public static function projectAgentFiles(): array
+    {
+        $root = base_path('.claude/agents');
+
+        if (! is_dir($root)) {
+            return [];
+        }
+
+        $managed = base_path(self::AGENTS_DIR).DIRECTORY_SEPARATOR;
+        $files = [];
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            $path = $file->getPathname();
+
+            if (str_starts_with($path, $managed) || strtolower($file->getExtension()) !== 'md') {
+                continue;
+            }
+
+            $files[] = $path;
+        }
+
+        sort($files);
+
+        return $files;
     }
 
     /**

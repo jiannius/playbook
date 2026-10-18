@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Jiannius\Playbook\Agents;
 
-use FilesystemIterator;
 use Laravel\Boost\Support\Config;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -107,7 +104,7 @@ class AgentSync
         $rendered = AgentCatalog::rendered();
         $except = AgentCatalog::except();
 
-        foreach (self::projectAgentFiles() as $path) {
+        foreach (AgentCatalog::projectAgentFiles() as $path) {
             $name = AgentCatalog::frontmatterName($path);
 
             if ($name === null) {
@@ -124,41 +121,6 @@ class AgentSync
                 $output->writeln(sprintf('`%s` overridden by the project (`%s`)', $name, $this->relative($path)));
             }
         }
-    }
-
-    /**
-     * Every `*.md` under .claude/agents/ that playbook does not own.
-     *
-     * @return list<string>
-     */
-    public static function projectAgentFiles(): array
-    {
-        $root = base_path('.claude/agents');
-
-        if (! is_dir($root)) {
-            return [];
-        }
-
-        $managed = base_path(AgentCatalog::AGENTS_DIR).DIRECTORY_SEPARATOR;
-        $files = [];
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            $path = $file->getPathname();
-
-            if (str_starts_with($path, $managed) || strtolower($file->getExtension()) !== 'md') {
-                continue;
-            }
-
-            $files[] = $path;
-        }
-
-        sort($files);
-
-        return $files;
     }
 
     private function relative(string $path): string
