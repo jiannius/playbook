@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Jiannius\Playbook\Agents\AgentCatalog;
 use Symfony\Component\Yaml\Yaml;
 
 /** The shipped agent sources, keyed by filename without the extension. */
@@ -117,7 +118,7 @@ it('preloads only skills this package ships', function () {
 });
 
 it('ends every agent with the managed notice', function () {
-    $notice = '<!-- Managed by jiannius/playbook and rewritten by boost:update. Change it in the package, or opt out in config/playbook.php and keep your own copy outside this directory. -->';
+    $notice = AgentCatalog::NOTICE;
 
     foreach (shippedAgentFiles() as $name => $path) {
         $lines = array_values(array_filter(

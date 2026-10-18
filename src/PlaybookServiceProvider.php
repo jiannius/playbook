@@ -4,6 +4,7 @@ namespace Jiannius\Playbook;
 
 use Illuminate\Support\ServiceProvider;
 use Jiannius\Playbook\Console\CheckCommand;
+use Jiannius\Playbook\Console\SyncCommand;
 
 class PlaybookServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,8 @@ class PlaybookServiceProvider extends ServiceProvider
         if (config('boost.enforce_tests') === null) {
             config()->set('boost.enforce_tests', false);
         }
+
+        $this->mergeConfigFrom(dirname(__DIR__).'/config/playbook.php', 'playbook');
     }
 
     /**
@@ -39,7 +42,12 @@ class PlaybookServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 CheckCommand::class,
+                SyncCommand::class,
             ]);
+
+            $this->publishes([
+                dirname(__DIR__).'/config/playbook.php' => config_path('playbook.php'),
+            ], 'playbook-config');
         }
     }
 }
