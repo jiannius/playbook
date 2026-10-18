@@ -10,18 +10,6 @@ use Jiannius\Playbook\Agents\AgentCatalog;
  * The directory is the managed boundary. Everything inside is playbook's and is rewritten to
  * match the package; everything outside belongs to the project and is never written or removed.
  */
-
-/** A project agent file with the given frontmatter name. */
-function projectAgent(string $dir, string $relative, string $name): string
-{
-    $path = $dir.'/.claude/agents/'.$relative;
-
-    is_dir(dirname($path)) || mkdir(dirname($path), 0755, true);
-    file_put_contents($path, "---\nname: {$name}\ndescription: Mine.\n---\n\nProject-owned agent {$name}.\n");
-
-    return $path;
-}
-
 it('writes all eleven agents, byte for byte, and exits 0', function () {
     $dir = $this->fakeProject(boostJson(), installAgents: false);
 

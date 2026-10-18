@@ -16,29 +16,6 @@ use Laravel\Boost\Install\AgentsDetector;
  * copy. Each case starts from a repo where everything else is current, so the exit code
  * can only come from the agents.
  */
-
-/** Make the guidelines half current, so only the agents half is under test. */
-function agentsGuidelinesCurrent(string $dir, string $rendered, string $file = 'CLAUDE.md'): void
-{
-    file_put_contents($dir.'/'.$file, boostBlock($rendered));
-}
-
-function agentsGit(string $dir, string $args): void
-{
-    exec('git -C '.escapeshellarg($dir).' '.$args.' 2>&1');
-}
-
-/** A project agent file with the given frontmatter name. */
-function projectOwnedAgent(string $dir, string $relative, string $name): string
-{
-    $path = $dir.'/.claude/agents/'.$relative;
-
-    is_dir(dirname($path)) || mkdir(dirname($path), 0755, true);
-    file_put_contents($path, "---\nname: {$name}\ndescription: Mine.\n---\n\nProject-owned agent {$name}.\n");
-
-    return $path;
-}
-
 it('reports OK when every agent is current', function () {
     // Positive control. Every case below asserts a non-zero exit, and without this one a
     // fixture that was broken for some other reason would pass them all.
@@ -116,7 +93,7 @@ it('reports BROKEN when a project agent has the same name as one of ours', funct
     $dir = $this->fakeProject(boostJson());
     agentsGuidelinesCurrent($dir, $this->renderedGuidelines());
 
-    projectOwnedAgent($dir, 'mine.md', 'debugger');
+    projectAgent($dir, 'mine.md', 'debugger');
 
     $this->artisan('playbook:check')
         ->assertExitCode(CheckCommand::BROKEN)
@@ -127,7 +104,7 @@ it('reports OK when the clashing name is opted out, and says the project overrid
     $dir = $this->fakeProject(boostJson());
     agentsGuidelinesCurrent($dir, $this->renderedGuidelines());
 
-    projectOwnedAgent($dir, 'mine.md', 'debugger');
+    projectAgent($dir, 'mine.md', 'debugger');
     unlink($dir.'/.claude/agents/playbook/debugger.md');
 
     config(['playbook.agents.except' => ['debugger']]);

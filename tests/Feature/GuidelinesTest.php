@@ -24,6 +24,10 @@ it('composes the rules that must not silently disappear', function () {
         ->toContain('Show the evidence before you call it done')
         ->toContain('Plan before a change that spans many files')
         ->toContain('Production is off-limits')
+        ->toContain('Never run against, modify, or expose production')
+        ->toContain('may also run against **staging**')
+        ->toContain('only when you were explicitly given it')
+        ->toContain('Changing a running production system is not')
         ->toContain('Secrets and customer data')
         ->toContain('CI must stay inside the free allowance');
 });
@@ -50,6 +54,30 @@ it('reports STALE when an agent file predates the test rule', function () {
     );
 
     file_put_contents($dir.'/CLAUDE.md', boostBlock($withoutTheRule));
+
+    $this->artisan('playbook:check')
+        ->assertExitCode(CheckCommand::STALE)
+        ->expectsOutputToContain('behind jiannius/playbook');
+});
+
+/**
+ * The staging allowance changed the production rule's wording, so an agent file written before
+ * it carries the old rule. That must read as stale, or the repo keeps telling its agents that
+ * data work may never leave the local machine while the task agents say otherwise.
+ */
+it('reports STALE when an agent file predates the staging allowance', function () {
+    $dir = $this->fakeProject(boostJson());
+    $rendered = $this->renderedGuidelines();
+
+    // Positive control, for the same reason as the test above.
+    file_put_contents($dir.'/CLAUDE.md', boostBlock($rendered));
+    $this->artisan('playbook:check')->assertExitCode(CheckCommand::OK);
+
+    $withoutStaging = str_replace('may also run against **staging**', 'run against local only', $rendered);
+
+    expect($withoutStaging)->not->toBe($rendered);
+
+    file_put_contents($dir.'/CLAUDE.md', boostBlock($withoutStaging));
 
     $this->artisan('playbook:check')
         ->assertExitCode(CheckCommand::STALE)
