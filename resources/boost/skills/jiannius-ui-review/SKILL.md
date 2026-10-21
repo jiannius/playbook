@@ -245,7 +245,9 @@ again, until it is absent. A pasted link or `--resume` can bring a watch back, w
    the change, or "no change" and why. Say that the fixes go onto <head branch> and are pushed to
    PR #<N>, and say so if the PR is someone else's. If a comment is unclear, or two contradict each
    other, ask about those only, and start on the rest.
-3. Start `pr-fixer`:
+3. Check the working tree is clean: `git status --porcelain`, in the checkout `pr-fixer` will work
+   in, must print nothing (it leaves gitignored files out). Otherwise stop and ask the person, so
+   their uncommitted work is not committed into the PR. Then start `pr-fixer`:
 
 > Fix these UI review comments on PR #<N> (<what it is>), on its existing branch <head branch> in the
 > main checkout: commit there, do not create a branch, and push to origin when done. Make only the
