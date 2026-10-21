@@ -40,6 +40,8 @@ git branch --show-current
 - **Uncommitted changes → stop and ask the tester.** `git checkout` carries them onto the PR branch, so
   you would be testing the PR plus their edits. Don't stash or discard them yourself.
 - **Remember the starting branch** — step 6 returns to it.
+- **Asked only for "before" screenshots** (a UI review asks for these)? Do section 7's *Before
+  shots* and nothing else: skip the rest of this section and sections 2 to 6. It has its own way back.
 
 Then, from the repo being tested:
 
@@ -65,8 +67,8 @@ php artisan migrate
 - **Test in the main checkout, not a worktree.** Herd serves the main checkout's folder at that URL, so
   a worktree is not what the browser shows. A worktree also starts with no `vendor/`, `node_modules/`
   or `.env`, and shares the local database unless it gets its own `DB_DATABASE`. Use one only when
-  the tester must keep their current checkout untouched — then `herd link` it to its own URL and
-  give it its own `DB_DATABASE`.
+  the tester must keep their current checkout untouched — then the tester links it in Herd to its own
+  URL themselves, and it gets its own `DB_DATABASE`.
 - You need a **test organization / sample data** to exercise features. Use local dev data or seed it — **never production data.**
 - If a page looks unstyled or a change isn't visible, it's almost always a missing `npm run build` or a needed hard-refresh (assets are hashed).
 
@@ -83,6 +85,7 @@ Focus on **UI/UX and actual operation**, not code. Drive the browser with **Play
 - **Looks right?** Spacing/alignment, responsive down to mobile, light **and** dark mode, numbers/labels/currency correct, buttons say what they do.
 - **Actions do what they claim?** "Export" produces the export; "Save" persists and survives a reload.
 - **Error/empty states sensible?** Clear messages, no raw errors, no broken layout.
+- **UI changed?** In Claude Code, take section 7's "after" screenshots now.
 
 ## 4. Report a bug
 
@@ -124,6 +127,161 @@ Run the rollback only if step 1 ran the PR's migrations; `<N>` is how many it ad
 the local schema would stay on the PR's version, so the next PR gets tested against the wrong database.
 Then `npm run build` again if the tester goes back to using the app on that branch.
 
+## 7. Screenshots for a UI review (Claude Code only)
+
+When a PR changes what people see, take "after" screenshots during the normal QA run, so the main
+session can offer a UI review (`jiannius-ui-review`). "Before" shots come later, and only if the
+person says yes to that review. In any other tool, skip this section: take screenshots only as bug
+evidence, and leave the `UI changes:` line out of the report.
+
+### Does the PR change the UI?
+
+Decide from the files the PR touches:
+
+```bash
+gh pr diff <PR-NUMBER> --name-only
+```
+
+| Counts as a UI change | Not on its own |
+|---|---|
+| `resources/views/`, any `*.blade.php` | Migrations, models, jobs, commands |
+| Livewire components (`app/Livewire/`) and view components (`app/View/`) | Tests, CI, docs |
+| `resources/css/`, `resources/js/`, the Tailwind config | API-only routes and controllers |
+| Language files (`lang/`): labels and messages | Dependency bumps with no visible effect |
+
+What you see while testing counts too: a screen that looks different is a UI change, whatever the
+file list said.
+
+### Test data only
+
+- **Seeded or local test data only** — the repo's seeders, or records you create in this run.
+  These screenshots go on a review page that can be shared, so never real customer data, and never
+  a local copy of a production database. If you cannot tell whether the local data is real, stop
+  and ask.
+- Nothing secret on screen: no `.env` values, no tokens, no real people's email addresses or phone
+  numbers.
+- If the page shows the Laravel debug bar, hide it in the browser before each shot, with a style
+  rule such as `document.querySelectorAll('.phpdebugbar').forEach((el) => { el.style.display = 'none'; })`,
+  never by editing `.env`.
+
+### Where they go
+
+Save them under `storage/app/ui-review/pr-<N>/r<round>/` — round 1 unless the task names another.
+Check that folder is gitignored before you write to it. `git check-ignore` prints the path when it is:
+
+```bash
+git check-ignore storage/app/ui-review/pr-<N>/r1/s01.png
+```
+
+If nothing prints, stop and report. Do not edit `.gitignore`.
+
+### What to take
+
+- Each affected screen at **desktop (1440 × 900)** and **phone (390 × 844)**, in light mode. Add
+  dark mode only when the change touches colours or the theme.
+- Number each screen once: its desktop and phone shots share the `NN`, as in `s01-desktop` and
+  `s01-phone`.
+- At most 8 screens a round. If more are affected, take the ones where the change shows best, and
+  list the rest under `skipped` in the manifest.
+- Use `scale: "css"`. Scroll the change into view, or take a full-page shot when it sits below the
+  first screen.
+- Name each file `s<NN>-<screen>-<desktop|phone>-<before|after>.png`, such as
+  `s01-invoices-phone-after.png`, and pass the whole relative path as the file name.
+- `npm run build` is the only npm command in this section: never `npm install`, and never leave a
+  lock file changed. If `package-lock.json` or `composer.lock` changes, put it back with
+  `git checkout -- <file>` before you take a shot.
+
+**After shots** — in the normal QA run, once the PR is running (section 3). Write the manifest with
+every `before` set to `null`.
+
+**Before shots** — only when the task asks for them. Take them on the PR's base branch: the same
+screens, at the same widths, as the round's manifest, with the same data. Check the checkout is clean
+and note the starting branch (section 1), then:
+
+```bash
+git fetch origin <base-branch>
+git checkout --detach origin/<base-branch>
+npm run build
+```
+
+| Step | When to run it |
+|---|---|
+| `git checkout --detach origin/<base-branch>` | Always: it moves no local branch |
+| `composer install` | `composer.lock` differs from the starting branch's |
+| `npm run build` | Always |
+
+Do not run migrations here. If a base screen fails because the local database is behind, leave its
+`before` as `null` and say why in `before_note`; a new screen has no "before" either. Fill in each
+`before`, `base` and `base_sha` in the manifest, then go back:
+
+```bash
+git checkout <starting-branch>
+npm run build
+```
+
+**Round 2 and later** — the task names the round. Test the local PR branch as it is: it holds fix
+commits that may not be on the remote yet, so never reset it to the remote. If `gh pr checkout`
+refuses because the local branch and the PR have diverged, stop and report. Take "after" shots only,
+of the screens the task lists; each one's "before" is the previous round's "after".
+
+### The manifest
+
+Write `manifest.json` in the round's folder:
+
+```json
+{
+  "pr": 123,
+  "title": "invoice PDF export",
+  "round": 1,
+  "head_sha": "<full SHA of the PR head you tested>",
+  "base": "dev",
+  "base_sha": "<full SHA of the base you photographed, or null>",
+  "data": "DatabaseSeeder, test organisation Demo Co",
+  "screens": [
+    {
+      "id": "s01-phone",
+      "screen": "Invoices list",
+      "path": "/invoices",
+      "width": "phone",
+      "after": "r1/s01-invoices-phone-after.png",
+      "before": "r1/s01-invoices-phone-before.png",
+      "before_note": null,
+      "changed": "Each row gets a PDF button.",
+      "look_at": "Whether the button pushes the total onto a second line."
+    }
+  ],
+  "skipped": [
+    { "screen": "Invoice settings", "why": "Same button and layout as the list." }
+  ]
+}
+```
+
+- `title` is the short "what it is" the task gives, such as "invoice PDF export", not the PR's title.
+- One entry per screen and width; `id` is `s<NN>-<desktop|phone>`, with one `NN` per screen.
+- Paths are relative to `storage/app/ui-review/pr-<N>/`.
+- `before` is `null` until a *Before shots* task fills it, and stays `null` for a new screen or a
+  base screen that would not load; `before_note` says why. Leave `before_note` `null` when `before`
+  is set.
+- `changed` and `look_at` are one plain sentence each: what the PR changed on this screen, and what
+  to check.
+
+### The report line
+
+End the report with exactly one of these as its last line:
+
+- `UI changes: yes — N after screenshots in <dir>, manifest <file>`
+- `UI changes: yes — no screenshots (<reason>)`
+- `UI changes: no`
+
+A task that asked only for "before" shots ends instead with one of:
+
+- `Before screenshots: N in <dir>, manifest <file>`
+- `Before screenshots: none (<reason>)`
+
+`N` counts the image files taken in this run, `<dir>` is the round's folder and `<file>` is its
+`manifest.json`. Do not publish the screenshots, attach them to anything, or post about them:
+whether a review starts is the main session's decision.
+
 ---
 
 ## QA guardrails (role-specific)
@@ -131,4 +289,6 @@ Then `npm run build` again if the tester goes back to using the app on that bran
 - **QA only** — reading code to diagnose a bug is fine; never push commits, merge PRs, or edit application code. Findings (including any "possible cause") go in bug issues; the developer implements.
 - **Local only** — migrations and seeds run against your **local** database. (Never touching production is an org-wide rule, already in the guidelines block.)
 - **Not automated tests** — your value is real browser + operational testing; the developer's test suite is separate and not your job to run or judge.
+- **Never run `herd link`, `herd secure` or `herd unlink`.** With a stale `vendor/`, Herd's Boost integration rewrites `.claude/skills/`, `AGENTS.md` and `boost.json`. If the site is not served at its `.test` URL, stop and report; linking a site is the tester's call.
+- **Screenshots stay local** — a UI review's screenshots go only to the gitignored folder in section 7. Publishing them is the main session's decision, through `jiannius-ui-review`.
 - When unsure whether something is a bug or intended, **ask the tester** (or note it in the issue as a question) rather than guessing.
