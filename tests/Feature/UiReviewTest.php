@@ -208,3 +208,35 @@ it('keeps machine paths out of the review skill', function () {
         ->not->toContain('/Users/')
         ->not->toContain('~/.claude');
 });
+
+// Phase 3: the wiring.
+
+it('has the routing rule ask about a review once, after a QA report', function () {
+    expect(uiReviewText('resources/claude/rules/task-agents.md'))
+        ->toContain('`UI changes: yes — N after screenshots in <dir>, manifest <file>`')
+        ->toContain('This involves UI changes — review it?')
+        ->toContain('run the `jiannius-ui-review` skill here, in this session; never hand it to an agent')
+        ->toContain("don't ask again about that PR");
+});
+
+it('names in the routing rule only skills playbook ships', function () {
+    preg_match_all('/`(jiannius-[a-z-]+)`/', uiReviewSource('resources/claude/rules/task-agents.md'), $matches);
+
+    expect($matches[1])->not->toBeEmpty();
+
+    foreach (array_unique($matches[1]) as $skill) {
+        expect(dirname(__DIR__, 2).'/resources/boost/skills/'.$skill.'/SKILL.md')
+            ->toBeFile("the routing rule names {$skill}, which playbook does not ship");
+    }
+});
+
+it('lets pr-fixer commit on the branch of a pull request under review', function () {
+    expect(uiReviewText('resources/claude/agents/pr-fixer.md'))
+        ->toContain('unless the task names an existing branch to commit on');
+});
+
+it('has wrap-up leave an open review to its own cleanup', function () {
+    expect(uiReviewText('resources/boost/skills/jiannius-wrap-up/SKILL.md'))
+        ->toContain('Exception — an open UI review.')
+        ->toContain('status comment on the PR');
+});
