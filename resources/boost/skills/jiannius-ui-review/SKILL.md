@@ -326,11 +326,16 @@ For a review closed without approval, the second line is "Closed without approva
    page link, and `storage/app/ui-review/pr-<N>/` with its file count. On a yes:
    - check no watch is left on the page (`ArtifactComments`, `action: "watch"` with no url lists
      them) and stop any with `on: false`;
+   - check the page is this review's: read it with the Artifact tool's `read` action. Its `<h1>`
+     must name PR #<N>, and its URL must equal the URL in the `jiannius-ui-review:open` marker you
+     read before the summary replaced it (`status.md` still holds it). If either check fails, stop
+     and ask the person;
    - delete the page with the Artifact tool's `delete` action, which asks the person to confirm. If
      they decline that prompt, ask whether to try again; never delete without it;
-   - check the folder path is exactly `storage/app/ui-review/pr-<N>` in this repo, then run
-     `rm -r storage/app/ui-review/pr-<N>`. Remove `storage/app/ui-review` only if it is then empty
-     (`rmdir`).
+   - check the folder before you remove it. Compute its path from `git rev-parse --show-toplevel`
+     plus `storage/app/ui-review/pr-<N>`. `<N>` must match `^[0-9]+$`. Refuse a symlink
+     (`test -L "<absolute path>"` must fail). Then run `rm -r -- "<absolute path>"`. Remove
+     `storage/app/ui-review` only if it is then empty (`rmdir`).
 4. Never delete another review's page or folder, or any artifact you did not publish for this
    review.
 5. Return the checkout to the branch you noted in section 1, if it is not there already.
