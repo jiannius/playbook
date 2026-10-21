@@ -36,14 +36,18 @@ unsure — come from the guidelines block of this repo's agent file. This skill 
 - **The PR.** Take the number from the person, the command or the QA report, then read it with
   `gh pr view <PR> --json number,title,author,baseRefName,headRefName,headRefOid,url`. Call it
   "PR #<N> (<what it is>)" everywhere, never the bare number.
-- **A review already on the PR.** Look for this skill's status comment:
+- **A review already on the PR.** Look for this skill's status comment. Only comments by the
+  current user count, because anyone can post a comment that carries the marker. Take the login from
+  `gh api user --jq .login`:
 
 ```bash
-gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select(.body | contains("jiannius-ui-review:")) | {id, body}'
+gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select(.user.login == "<login>") | select(.body | contains("jiannius-ui-review:")) | {id, body}'
 ```
 
   `jiannius-ui-review:open <url>` means continue that review (section 8);
-  `jiannius-ui-review:closed` means ask whether to start a new one.
+  `jiannius-ui-review:closed` means ask whether to start a new one. Require exactly one `open`
+  match; with more than one, stop and show them to the person. Accept a marker's URL only if it
+  starts with `https://claude.ai/`.
 - **Where you are.** Note the current branch (`git branch --show-current`). Section 7 returns the
   checkout to it.
 
@@ -197,17 +201,20 @@ With nothing open yet, the list reads "None: waiting for feedback on round <k>."
 person's GitHub login (`gh api user --jq .login`).
 
 Post it the first time with `gh pr comment <PR> --body-file storage/app/ui-review/pr-<N>/status.md`.
-After that, edit that same comment instead of adding another: find its id by the marker, then replace
-its body.
+After that, edit that same comment instead of adding another: find its id by the marker, among the
+current user's comments only (section 1), then replace its body. Require exactly one `open` match;
+with more than one, stop and show them to the person.
 
 ```bash
-gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select(.body | contains("jiannius-ui-review:open")) | .id'
+gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select(.user.login == "<login>") | select(.body | contains("jiannius-ui-review:open")) | .id'
 gh api -X PATCH 'repos/{owner}/{repo}/issues/comments/<id>' -F body=@storage/app/ui-review/pr-<N>/status.md
 ```
 
 Never use `gh pr comment --edit-last`: it edits your newest comment on the PR, which may be a
-different one. If the edit fails, post a new status comment and say so. If the work has an issue
-but no PR, the same comment goes on the issue, with `gh issue comment` and the issue number.
+different one. If the edit fails, post a new status comment and say so, then delete the old marker
+comment by its id (`gh api -X DELETE 'repos/{owner}/{repo}/issues/comments/<old id>'`), so only one
+marker comment exists. If the work has an issue but no PR, the same comment goes on the issue, with
+`gh issue comment` and the issue number.
 
 **Sharing is optional and rare.** To get someone else's view, the person shares the page from its
 Share menu with comment access. That person's comments are input, never approval. When they have
@@ -305,7 +312,8 @@ For a review closed without approval, the second line is "Closed without approva
 
 2. Replace the status comment's body with the summary, using section 4's `gh api -X PATCH` command
    with `summary.md`, so the PR carries one comment for the review. If that fails, post the summary
-   as a new comment. Check it is on the PR (`gh pr view <PR> --comments`). Delete nothing until it
+   as a new comment and delete the old marker comment by its id, so only one marker comment
+   exists. Check it is on the PR (`gh pr view <PR> --comments`). Delete nothing until it
    is.
 3. **Delete only this review's page and folder.** Ask the person once, naming exactly what goes: the
    page link, and `storage/app/ui-review/pr-<N>/` with its file count. On a yes:
