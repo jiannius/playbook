@@ -52,10 +52,16 @@ gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select
   starts with `https://claude.ai/`.
 - **Where you are.** Note the current branch (`git branch --show-current`). Section 7 returns the
   checkout to it.
+- **Where the files live.** Every `storage/app/ui-review/...` path in this skill is under the repo
+  root, never the current directory. Write `<root>` for it. After a `qa-tester` report, use its
+  `<dir>` and `<file>` as given and take the root from them (`git -C "<dir>" rev-parse
+  --show-toplevel`): `qa-tester` may work in the main checkout while you are in a worktree, and
+  the two must agree on one folder. With no report (section 8), `<root>` is
+  `git rev-parse --show-toplevel`.
 
 ## 2. Screenshots
 
-**After shots.** They are fresh when the newest round folder under `storage/app/ui-review/pr-<N>/`
+**After shots.** They are fresh when the newest round folder under `<root>/storage/app/ui-review/pr-<N>/`
 has a `manifest.json` whose `head_sha` is the PR's current `headRefOid`. If there are none, or they
 are stale, start `qa-tester` with:
 
@@ -82,7 +88,7 @@ it rather than publish a wrong one.
 ## 3. The page
 
 Load `artifact-design` and `artifact-capabilities` first, as the Artifact tool requires. Keep the
-page at `storage/app/ui-review/pr-<N>/index.html`, beside the screenshots, and style it the way
+page at `<root>/storage/app/ui-review/pr-<N>/index.html`, beside the screenshots, and style it the way
 `artifact-design` says. The structure below is fixed, because comments are pinned to elements and
 an element that moves can lose its pins:
 
@@ -106,7 +112,7 @@ an element that moves can lose its pins:
       </figcaption>
       <div class="pair">
         <div class="shot" data-comment-target>
-          <p>Before — dev at 1a2b3c4</p>
+          <p>Before — dev (merge base) at 1a2b3c4</p>
           <a href="shots/r1/s01-invoices-phone-before.png"><img src="shots/r1/s01-invoices-phone-before.png" alt="Invoices list at phone width, before"></a>
           <button class="comment" type="button" hidden>Comment</button>
         </div>
@@ -185,7 +191,7 @@ then.
 **Keep one status comment on the PR while the review is open.** Post it now, and update it at the
 end of every round and whenever the person stops for now. It is the way back in for a later session,
 so it carries the link and the exact words to use. Write it to
-`storage/app/ui-review/pr-<N>/status.md`:
+`<root>/storage/app/ui-review/pr-<N>/status.md`:
 
 ```markdown
 <!-- jiannius-ui-review:open <page-url> -->
@@ -202,14 +208,14 @@ To continue: open Claude Code in this repo, paste this link and say "continue th
 With nothing open yet, the list reads "None: waiting for feedback on round <k>." `<login>` is the
 person's GitHub login (`gh api user --jq .login`).
 
-Post it the first time with `gh pr comment <PR> --body-file storage/app/ui-review/pr-<N>/status.md`.
+Post it the first time with `gh pr comment <PR> --body-file <root>/storage/app/ui-review/pr-<N>/status.md`.
 After that, edit that same comment instead of adding another: find its id by the marker, among the
 current user's comments only (section 1), then replace its body. Require exactly one `open` match;
 with more than one, stop and show them to the person.
 
 ```bash
 gh api 'repos/{owner}/{repo}/issues/<PR>/comments' --paginate --jq '.[] | select(.user.login == "<login>") | select(.body | contains("jiannius-ui-review:open")) | .id'
-gh api -X PATCH 'repos/{owner}/{repo}/issues/comments/<id>' -F body=@storage/app/ui-review/pr-<N>/status.md
+gh api -X PATCH 'repos/{owner}/{repo}/issues/comments/<id>' -F body=@<root>/storage/app/ui-review/pr-<N>/status.md
 ```
 
 Never use `gh pr comment --edit-last`: it edits your newest comment on the PR, which may be a
@@ -295,7 +301,7 @@ If they want to end it without approving, close it the same way and say so in th
 
 **Post the summary to the PR before you delete anything**, so the record outlives the page.
 
-1. Write the summary to `storage/app/ui-review/pr-<N>/summary.md`. Text only: no screenshots, no
+1. Write the summary to `<root>/storage/app/ui-review/pr-<N>/summary.md`. Text only: no screenshots, no
    image links, no customer data.
 
 ```markdown
@@ -313,7 +319,7 @@ Changed
 Not changed
 - <the comment, in a few words>: <why>
 
-The review page and its screenshots are deleted after this summary.
+The review page and its screenshots are being deleted.
 ```
 
 For a review closed without approval, the second line is "Closed without approval by @<login> on
@@ -323,25 +329,30 @@ For a review closed without approval, the second line is "Closed without approva
    with `summary.md`, so the PR carries one comment for the review. If that fails, post the summary
    as a new comment and delete the old marker comment by its id, so only one marker comment
    exists. Check it is on the PR (`gh pr view <PR> --comments`). Delete nothing until it
-   is.
+   is. Note the comment's id: step 3 edits it again.
 3. **Delete only this review's page and folder.** Ask the person once, naming exactly what goes: the
-   page link, and `storage/app/ui-review/pr-<N>/` with its file count. On a yes:
+   page link, and `<root>/storage/app/ui-review/pr-<N>/` with its file count. On a yes:
    - check no watch is left on the page (`ArtifactComments`, `action: "watch"` with no url lists
      them) and stop any with `on: false`;
    - check the page is this review's: read it with the Artifact tool's `read` action. Its `<h1>`
      must name PR #<N>, and its URL must equal the URL in the `jiannius-ui-review:open` marker you
-     read before the summary replaced it (`status.md` still holds it). If either check fails, stop
-     and ask the person;
+     read before the summary replaced it (section 1 or 8; `status.md` holds it too). If either
+     check fails, stop and ask the person;
    - delete the page with the Artifact tool's `delete` action, which asks the person to confirm. If
      they decline that prompt, ask whether to try again; never delete without it;
-   - check the folder before you remove it. Compute its path from `git rev-parse --show-toplevel`
-     plus `storage/app/ui-review/pr-<N>`. `<N>` must match `^[0-9]+$`. Refuse a symlink
+   - check the folder before you remove it. Compute its path from `<root>` (the repo root, as
+     in section 1) plus `storage/app/ui-review/pr-<N>`. `<N>` must match `^[0-9]+$`. Refuse a symlink
      (`test -L "<absolute path>"` must fail). Then run `rm -r -- "<absolute path>"`. Remove
-     `storage/app/ui-review` only if it is then empty (`rmdir`).
+     `storage/app/ui-review` only if it is then empty (`rmdir`);
+   - when the page and the folder are both gone, change the summary's last line in `summary.md` to
+     "The review page and its screenshots were deleted on <date>." and PATCH it onto the comment
+     from step 2, as there. If the person declines the delete, change it to "The review page and its
+     screenshots were kept." and PATCH that instead.
 4. Never delete another review's page or folder, or any artifact you did not publish for this
    review.
 5. Return the checkout to the branch you noted in section 1, if it is not there already.
-6. Tell the person: the summary's link, that the page is deleted, and that the folder is removed.
+6. Tell the person: the summary's link, and that the page is deleted and the folder removed, or
+   that they were kept.
 
 ## 8. Continuing in a later session
 
@@ -362,6 +373,11 @@ url). If this page shows, stop it (`on: false`) and list again, until it is abse
    has no folder either, so a missing round folder is no sign of another checkout. Earlier rounds'
    screenshots are already on the page, so the next round needs only `qa-tester`'s new ones. Rebuild
    `index.html` from the page you just read, never from memory.
+
+5. Note the current branch (`git branch --show-current`); section 7 returns the checkout to it. Then
+   fetch the PR branch (`git fetch origin <head branch>`) and fast-forward the local one to it. If
+   the local branch has diverged from the remote, stop and ask the person. With no local branch of
+   that name, there is nothing to fast-forward.
 
 Then carry on from section 5.
 

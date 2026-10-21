@@ -194,25 +194,28 @@ If nothing prints, stop and report. Do not edit `.gitignore`.
 **After shots** — in the normal QA run, once the PR is running (section 3). Write the manifest with
 every `before` set to `null`.
 
-**Before shots** — only when the task asks for them. Take them on the PR's base branch: the same
-screens, at the same widths, as the round's manifest, with the same data. Check the checkout is clean
-and note the starting branch (section 1), then:
+**Before shots** — only when the task asks for them. Take them where the PR branched from its base
+branch, the merge base, not the base's tip: a base that has moved on would show other people's
+changes as the PR's. Use the same screens, at the same widths, as the round's manifest, with the same
+data. Check the checkout is clean and note the starting branch (section 1), then:
 
 ```bash
 git fetch origin <base-branch>
-git checkout --detach origin/<base-branch>
+git checkout --detach "$(git merge-base origin/<base-branch> <PR head sha>)"
 npm run build
 ```
 
+`<PR head sha>` is the manifest's `head_sha`.
+
 | Step | When to run it |
 |---|---|
-| `git checkout --detach origin/<base-branch>` | Always: it moves no local branch |
+| `git checkout --detach <merge base>` | Always: it moves no local branch |
 | `composer install` | `composer.lock` differs from the starting branch's |
 | `npm run build` | Always |
 
 Do not run migrations here. If a base screen fails because the local database is behind, leave its
 `before` as `null` and say why in `before_note`; a new screen has no "before" either. Fill in each
-`before`, `base` and `base_sha` in the manifest, then go back:
+`before`, `base` and `base_sha` in the manifest (`base_sha` is that merge base), then go back:
 
 ```bash
 git checkout <starting-branch>
@@ -235,7 +238,7 @@ Write `manifest.json` in the round's folder:
   "round": 1,
   "head_sha": "<full SHA of the PR head you tested>",
   "base": "dev",
-  "base_sha": "<full SHA of the base you photographed, or null>",
+  "base_sha": "<full SHA of the merge base you photographed, or null>",
   "data": "DatabaseSeeder, test organisation Demo Co",
   "screens": [
     {

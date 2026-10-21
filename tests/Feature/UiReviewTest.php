@@ -84,7 +84,8 @@ it('takes before shots only when asked, without moving a local branch or migrati
 
     expect(uiReviewText('resources/boost/skills/jiannius-qa-tester/SKILL.md'))
         ->toContain('**Before shots** — only when the task asks for them')
-        ->toContain('git checkout --detach origin/<base-branch>')
+        ->toContain('git merge-base origin/<base-branch> <PR head sha>')
+        ->toContain('the merge base, not the base\'s tip')
         ->toContain('Do not run migrations here');
 });
 
@@ -129,7 +130,7 @@ it('runs the review skill in the session, with no model, effort, fork or tool gr
     // context: fork runs the skill as a subagent, which ends when it reports.
     expect($frontmatter)->not->toHaveKey('context')->not->toHaveKey('agent');
 
-    // Starting an agent never prompts in default mode (dry run, Claude Code 2.1.306), so a tool
+    // Starting an agent did not prompt in default mode (dry run, Claude Code 2.1.306), so a tool
     // grant would change nothing, and publishing and deleting must keep their own prompts.
     expect($frontmatter)->not->toHaveKey('allowed-tools');
 

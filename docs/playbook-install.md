@@ -325,11 +325,11 @@ it has no marketplace copy.
 
 `jiannius-ui-review` (a review of a PR's UI changes on a private claude.ai page) is a fourth, also written here. It works only in Claude Code, and still ships through Boost, as `jiannius-wrap-up` does. Shipping it Claude-only would mean playbook writing into `.claude/skills/`, which Boost manages, for one file.
 
-It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with.
+It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the PR's merge base with the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with.
 
 Verified on Claude Code 2.1.306 with artifact runtime contract 0.2.88, in a dry run on 2026-10-21 (skeleton-project PR #12, dashboard welcome heading and stat cards):
 
-- In default mode, starting an agent never prompts, so the skill needs no `allowed-tools`.
+- In default mode, starting an agent did not prompt in the dry run (Claude Code 2.1.306), so the skill needs no `allowed-tools`.
 - Each page publish prompts once.
 - A skill Claude starts itself prompts once.
 - A qa-tester round prompts about five times, mostly for Playwright.
@@ -349,7 +349,7 @@ Herd, so anyone who can do the work has composer regardless. The dependency to p
 Both stayed in the marketplace until the package was installable and installed, so nobody was left
 with neither. Those copies are now retired (claude-plugins PR #10); this package is the only home of both.
 
-The other seven internal plugin marketplace skills stay where they are. Composer is repo-scoped; the
+The other eight internal plugin marketplace skills stay where they are. Composer is repo-scoped; the
 marketplace is user-scoped and therefore the superset. See the README's second routing
 question.
 
