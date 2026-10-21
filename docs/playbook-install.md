@@ -4,7 +4,7 @@ How the standard reaches a repo, what Laravel Boost already handles, and the fou
 gaps `playbook` fills.
 
 Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows, the
-three skills and the Claude Code task agents exist; the package resolves from Packagist; and the app skeleton installs it and
+four skills and the Claude Code task agents exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target
@@ -323,6 +323,22 @@ PR on Herd and browser-testing it). Both now live at `resources/boost/skills/<na
 `jiannius-wrap-up` (closing a session cleanly) is a third skill, written for the package directly;
 it has no marketplace copy.
 
+`jiannius-ui-review` (a review of a PR's UI changes on a private claude.ai page) is a fourth, also written here. It works only in Claude Code, and still ships through Boost, as `jiannius-wrap-up` does. Shipping it Claude-only would mean playbook writing into `.claude/skills/`, which Boost manages, for one file.
+
+It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with.
+
+Verified on Claude Code 2.1.306 with artifact runtime contract 0.2.88, in a dry run on 2026-10-21 (skeleton-project PR #12, dashboard welcome heading and stat cards):
+
+- In default mode, starting an agent never prompts, so the skill needs no `allowed-tools`.
+- Each page publish prompts once.
+- A skill Claude starts itself prompts once.
+- A qa-tester round prompts about five times, mostly for Playwright.
+- Images published as supporting `files` render at both widths.
+- Comment pins survive a republish that appends a round and collapses the previous one.
+- A thread's anchor starts with the figure's id.
+- The status comment edits in place with `gh api -X PATCH`.
+- A publish arms automatic comment replies, which run in the background without the skill's rules; one called a screenshot "approved". So the skill stops the watch after every publish and reads comments only when the person says they are done.
+
 **The QA-composer question is closed.** The worry was that a QA person without `composer install`
 would never see a skill shipped in `vendor/`. `SkillWriter::writeNonCustomSkill()` copies the skill
 directory out of `vendor/` into `.claude/skills/<name>/` — a committed path, so a plain `git clone`
@@ -330,10 +346,8 @@ carries it. And the QA job opens with `composer install` and `npm run build` to 
 Herd, so anyone who can do the work has composer regardless. The dependency to preserve is that
 **`.claude/skills/` must stay committed, not gitignored**.
 
-Both skills stay in the marketplace as well until the package is installable and installed;
-removing the marketplace copy first would leave everyone with neither. That is a temporary
-double copy, and the README's warning applies — the composer copy is canonical, and the
-marketplace copy is not to be edited.
+Both stayed in the marketplace until the package was installable and installed, so nobody was left
+with neither. Those copies are now retired (claude-plugins PR #10); this package is the only home of both.
 
 The other seven internal plugin marketplace skills stay where they are. Composer is repo-scoped; the
 marketplace is user-scoped and therefore the superset. See the README's second routing
@@ -560,7 +574,7 @@ project rather than as a clash.
 
 **The routing rule is Claude-only.** `.claude/rules/playbook/task-agents.md` is the table of which
 agent takes which task. There is no `AGENTS.md` version and no agent set for other tools; see the
-exception recorded under "Settled".
+exception recorded under "Settled". It also carries one paragraph for after a QA report: when the report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file>`, the main session asks once, "This involves UI changes — review it?", before starting `jiannius-ui-review`. That lives in the rule, not the skill, because the rule is always loaded and the skill is not.
 
 **Data agents and staging.** `data-investigator` and `data-backfill` may run against staging, only
 when the person who asked for the task explicitly gave it. Production stays banned. The core guideline carries the
@@ -610,11 +624,14 @@ using a different editor.
   with no repo. The audiences do not overlap. Accepted cost: the mirror is a manual paste with no
   staleness check. *(2026-08-28)*
 - **Custom content lives outside any managed block, always.** *(2026-08-28)*
-- **No vendor-specific work — with one deliberate exception, the task agents.** `AGENTS.md` is the
+- **No vendor-specific work — with two deliberate exceptions, the task agents.** `AGENTS.md` is the
   general target, and Boost writes it for every agent it supports. The task agents and their
   routing rule are Claude Code only (`.claude/agents/playbook/`, `.claude/rules/playbook/`): what
   makes them worth shipping is a pinned model and effort per agent, and those are Claude settings
-  with no cross-vendor equivalent. *(2026-08-28; agents exception 2026-10-16)*
+  with no cross-vendor equivalent. `jiannius-ui-review` is the second: it ships through Boost like
+  every skill, but works only in Claude Code, because it needs Artifacts, artifact comments and the
+  Agent tool. Its first lines send every other tool to a normal QA report. *(2026-10-20)*
+  *(2026-08-28; agents exception 2026-10-16)*
 - **Test enforcement is ours, not Boost's install-time answer.** Boost asks whether to enforce
   tests during `boost:install` and writes the resulting block into the agent files, but
   `boost.json` does not persist the answer. So every `composer update` runs `boost:update`, which
