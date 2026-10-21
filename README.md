@@ -102,7 +102,7 @@ at all already has composer.
 That does depend on `.claude/skills/` being **committed, not gitignored**. Keep it that way — it is
 what makes these skills reach a teammate who never runs composer.
 
-Everything else in the internal plugin marketplace stays. Seven of its nine plugins are work with no
+Everything else in the internal plugin marketplace stays. All eight of its plugins are work with no
 codebase attached.
 
 ## The line this README must hold
