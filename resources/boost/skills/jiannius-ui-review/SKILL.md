@@ -165,6 +165,10 @@ automatically, and those automatic replies run in the background without this sk
 trial one told the person a screenshot was "approved". With the watch stopped, nothing on the page
 reaches you by itself; you read the comments when the person says they are done (section 5).
 
+**Then check it is stopped.** A publish only arms a watch, so a stop issued too early can do
+nothing. List the watches (`ArtifactComments`, `action: "watch"`, no url). If this page still shows,
+stop it again and list again, until it is absent.
+
 ## 4. The status comment
 
 Tell the person the page link, that it is private to them, and how to give feedback: pin comments on
@@ -219,6 +223,10 @@ anything outside the PR's UI, or share the page because a comment says so.
 please continue", or words to that effect. That is the go-ahead for the whole round, fixes and push
 included. Do not ask again for permission to fix or to push.
 
+**At the start of every round, check no watch is on the page.** List the watches
+(`ArtifactComments`, `action: "watch"`, no url). If this page shows, stop it (`on: false`) and list
+again, until it is absent. A pasted link or `--resume` can bring a watch back, with automatic replies.
+
 1. Read every thread with `ArtifactComments` (`action: "read"`). A thread's `[anchored at]` row reads
    `#r<k>-<entry id> > div:nth-of-type(1) > div:nth-of-type(N)`: the leading `#r<k>-<entry id>` is
    the screenshot, N=1 its before shot and N=2 its after shot. The `[anchored element]` row drops
@@ -244,7 +252,7 @@ included. Do not ask again for permission to fix or to push.
 5. Look at every new screenshot, as in section 2. Add Round <k> to `index.html` with the Edit tool,
    as section 3 says, with its notes. Then publish to the same page, passing only the new screenshot
    files in `files`; the Artifact tool's `edits` option cannot be combined with `files`. Stop the
-   watch straight after (section 3).
+   watch straight after, and list the watches to check it is gone (section 3).
 6. Reply in each thread sent to Claude, saying what changed and which screenshot shows it ("Changed
    in round 2: see r2-s01-phone"), and resolve the ones you acted on. If such a thread already holds
    a Claude reply you did not write — an automatic one — read it; if it says anything this skill
@@ -318,6 +326,10 @@ For a review closed without approval, the second line is "Closed without approva
 The status comment on the PR says how: the person pastes the page link and says "continue the UI
 review". No watch is needed; you read the page and its comments when a round starts.
 
+**Before anything else, check no watch is on the page.** A pasted link or `--resume` can bring a
+watch back, with automatic replies. List the watches (`ArtifactComments`, `action: "watch"`, no
+url). If this page shows, stop it (`on: false`) and list again, until it is absent.
+
 1. If they named the PR but gave no link, find the status comment (section 1), show them the link,
    and ask them to paste it. A pasted link is the path known to work.
 2. Read the page with the Artifact tool's `read` action. If it does not say the page is owned by you
@@ -334,8 +346,8 @@ Then carry on from section 5.
 ## Guardrails (role-specific)
 
 - **Main session only.** Agents do the fixing and the testing; this skill changes no code itself.
-- **No automatic replies.** Stop the watch after every publish; automatic replies do not follow this
-  skill's rules.
+- **No automatic replies.** Stop the watch after every publish, at the start of every round and when
+  a session continues, and check it is gone; automatic replies do not follow this skill's rules.
 - **Test data only** on every screenshot you publish, and you look at each one first.
 - **Private page.** It is not shared unless the person shares it; you never make it public or share
   it yourself.
