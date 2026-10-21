@@ -260,7 +260,7 @@ Write `manifest.json` in the round's folder:
 ```
 
 - `title` is the short "what it is" the task gives, such as "invoice PDF export", not the PR's title.
-- One entry per screen and width; `id` is `s<NN>-<desktop|phone>`, with one `NN` per screen.
+- One entry in `screens` per screen and width; `id` is `s<NN>-<desktop|phone>`, with one `NN` per screen.
 - Paths are relative to `storage/app/ui-review/pr-<N>/`.
 - `before` is `null` until a *Before shots* task fills it, and stays `null` for a new screen or a
   base screen that would not load; `before_note` says why. Leave `before_note` `null` when `before`

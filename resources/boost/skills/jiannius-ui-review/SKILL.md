@@ -148,7 +148,8 @@ an element that moves can lose its pins:
 - From Round 2 on, a round opens with notes on what it handled: for each comment, its screenshot id,
   the comment in a few words, what changed and the commit's short SHA, or "no change" and why.
   These notes are the record of which comments are done.
-- One `<figure>` per manifest entry, with `id="r<round>-<entry id>"`. Its caption gives the id, the
+- One `<figure>` per entry in the manifest's `screens`, with `id="r<round>-<entry id>"`, where an
+  entry id is `s<NN>-<desktop|phone>`. Its caption gives the id, the
   screen and width, then `changed` and `look_at` from the manifest, in plain words. No praise and no
   sales language: say what changed and where to look.
 - Every `div.pair` holds two divs, before first and after second. A screen with no "before" keeps
@@ -164,7 +165,8 @@ buttons open the comment box without a consent prompt. No `db`: approval is the 
 click (section 6).
 
 **Screenshots go up with the page as supporting files**, not as assets: `files` maps
-`shots/r<round>/<file>.png` to the local file. A later round passes only its new files; files from
+`shots/r<round>/<file>.png` to the local file, named as in the manifest
+(`s<NN>-<screen>-<desktop|phone>-<before|after>.png`). A later round passes only its new files; files from
 earlier rounds stay on the page.
 
 Publish with `icon: "image"` and a one-sentence `description` naming PR #<N> (<what it is>). If a
