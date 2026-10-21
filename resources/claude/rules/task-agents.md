@@ -20,7 +20,11 @@ This holds even when a skill also matches: a review request goes to `pr-reviewer
 
 ## After a QA report
 
-In an interactive Claude Code session only: when a QA report — from `qa-tester`, or from the `jiannius-qa-tester` skill in this session — ends with `UI changes: yes — N after screenshots in <dir>, manifest <file>`, ask the person once:
+In an interactive Claude Code session only: when a QA report — from `qa-tester`, or from the `jiannius-qa-tester` skill in this session — ends with `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`, ask the person once. When every screen is new (`M` equals `N`), ask:
+
+> This adds new screens — review them? I'd put the screenshots on a private claude.ai page for you to comment on, and keep a status comment on the PR.
+
+Otherwise ask:
 
 > This involves UI changes — review it? I'd take the "before" shots, put both on a private claude.ai page for you to comment on, and keep a status comment on the PR.
 

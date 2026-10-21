@@ -68,14 +68,17 @@ are stale, start `qa-tester` with:
 > QA-test PR #<N> (<what it is>). It changes the UI: take the round-1 "after" screenshots in
 > section 7 of `jiannius-qa-tester`. Do not file issues or post on the PR.
 
-Go on only if its report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file>`.
+Go on only if its report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`.
 Otherwise tell the person what it found, and stop.
 
-**Before shots.** Then start `qa-tester` again, for the "before" shots only:
+**Before shots.** Read the manifest: each entry's `new` says whether the screen is new in the PR. Skip the before-only `qa-tester` run entirely when every
+entry has `new: true`: there is nothing to photograph, so carry on with the "after" shots alone. Otherwise
+start `qa-tester` again, for the "before" shots only. For a mix, name the entries with `new: false`
+by id and no others:
 
 > Take the round-1 "before" screenshots for PR #<N> (<what it is>), as section 7 of
-> `jiannius-qa-tester` describes, for the screens in <manifest file>. Nothing else: no other
-> testing, no issues, no PR comments.
+> `jiannius-qa-tester` describes, for these entries in <manifest file>: <the `new: false` entry
+> ids>. Nothing else: no other testing, no issues, no PR comments.
 
 Its report ends with `Before screenshots: N in <dir>, manifest <file>` or `Before screenshots: none
 (<reason>)`. With none, carry on with the "after" shots alone and say why on the page.
@@ -153,8 +156,9 @@ an element that moves can lose its pins:
   screen and width, then `changed` and `look_at` from the manifest, in plain words. No praise and no
   sales language: say what changed and where to look.
 - Every `div.pair` holds two divs, before first and after second. A screen with no "before" keeps
-  the shape with a placeholder first: `<div class="shot none" data-uncommentable>`, holding "New
-  screen" or its `before_note`. Each real image sits in a `div.shot` with `data-comment-target`,
+  the shape with a placeholder first: `<div class="shot none" data-uncommentable>`, holding "New in
+  this PR" for an entry with `new: true`, or else its `before_note`. A new entry's caption also says
+  "New in this PR". Each real image sits in a `div.shot` with `data-comment-target`,
   labelled with the branch and short SHA it shows.
 - Before and after side by side on a wide screen, one above the other below 720 px. Phone shots show
   at their own width; desktop shots scale down to the column, and each links to its full-size file.

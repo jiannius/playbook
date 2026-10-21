@@ -192,12 +192,13 @@ If nothing prints, stop and report. Do not edit `.gitignore`.
   `git checkout -- <file>` before you take a shot.
 
 **After shots** — in the normal QA run, once the PR is running (section 3). Write the manifest with
-every `before` set to `null`.
+every `before` set to `null`, and set `new` on each entry (see *The manifest*): a new screen gets
+no "before" at all.
 
 **Before shots** — only when the task asks for them. Take them where the PR branched from its base
 branch, the merge base, not the base's tip: a base that has moved on would show other people's
 changes as the PR's. Use the same screens, at the same widths, as the round's manifest, with the same
-data. Check the checkout is clean and note the starting branch (section 1), then:
+data, but only the entries with `new: false`: never take a "before" for an entry with `new: true`. Check the checkout is clean and note the starting branch (section 1), then:
 
 ```bash
 git fetch origin <base-branch>
@@ -214,7 +215,7 @@ npm run build
 | `npm run build` | Always |
 
 Do not run migrations here. If a base screen fails because the local database is behind, leave its
-`before` as `null` and say why in `before_note`; a new screen has no "before" either. Fill in each
+`before` as `null` and say why in `before_note`. Fill in each
 `before`, `base` and `base_sha` in the manifest (`base_sha` is that merge base), then go back:
 
 ```bash
@@ -249,6 +250,7 @@ Write `manifest.json` in the round's folder:
       "after": "r1/s01-invoices-phone-after.png",
       "before": "r1/s01-invoices-phone-before.png",
       "before_note": null,
+      "new": false,
       "changed": "Each row gets a PDF button.",
       "look_at": "Whether the button pushes the total onto a second line."
     }
@@ -264,7 +266,13 @@ Write `manifest.json` in the round's folder:
 - Paths are relative to `storage/app/ui-review/pr-<N>/`.
 - `before` is `null` until a *Before shots* task fills it, and stays `null` for a new screen or a
   base screen that would not load; `before_note` says why. Leave `before_note` `null` when `before`
-  is set.
+  is set, except for a new screen (below).
+- `new` is a boolean on every entry. It is `true` when the screen does not exist on the PR's base:
+  the view, Livewire or component file for it is added by the PR (`gh pr diff <PR-NUMBER>
+  --name-only` together with the file status, such as `git diff --name-status <merge-base>
+  <head>` showing `A`), or its route does not exist on the base. When unsure, set `false`, so a
+  "before" is attempted. A new entry keeps `before` as `null` and sets `before_note` to "New in
+  this PR": the only case where `before_note` is set for a `null` `before` for this reason.
 - `changed` and `look_at` are one plain sentence each: what the PR changed on this screen, and what
   to check.
 
@@ -272,7 +280,7 @@ Write `manifest.json` in the round's folder:
 
 End the report with exactly one of these as its last line:
 
-- `UI changes: yes — N after screenshots in <dir>, manifest <file>`
+- `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`
 - `UI changes: yes — no screenshots (<reason>)`
 - `UI changes: no`
 
@@ -282,7 +290,9 @@ A task that asked only for "before" shots ends instead with one of:
 - `Before screenshots: none (<reason>)`
 
 `N` counts the image files taken in this run, `<dir>` is the round's folder and `<file>` is its
-`manifest.json`. Do not publish the screenshots, attach them to anything, or post about them:
+`manifest.json`. `M` counts the entries in `screens` with `new: true`, and the `(M new screens)`
+suffix is always printed, as `(0 new screens)` when there are none, so the main session reads it
+the same way every time. Every screen is new when `M` equals `N`. Do not publish the screenshots, attach them to anything, or post about them:
 whether a review starts is the main session's decision.
 
 ---

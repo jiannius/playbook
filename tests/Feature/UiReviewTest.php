@@ -46,7 +46,7 @@ function uiReviewFrontmatter(string $relative): array
 
 it('gives qa-tester and its skill the same report lines', function () {
     foreach ([
-        '`UI changes: yes — N after screenshots in <dir>, manifest <file>`',
+        '`UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`',
         '`UI changes: yes — no screenshots (<reason>)`',
         '`UI changes: no`',
         '`Before screenshots: N in <dir>, manifest <file>`',
@@ -191,7 +191,7 @@ it('maps a comment to its screenshot by the anchor, not the anchored element', f
 
 it('waits for the report lines qa-tester ends with', function () {
     expect(uiReviewText('resources/boost/skills/jiannius-ui-review/SKILL.md'))
-        ->toContain('`UI changes: yes — N after screenshots in <dir>, manifest <file>`')
+        ->toContain('`UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`')
         ->toContain('`Before screenshots: N in <dir>, manifest <file>`');
 });
 
@@ -323,7 +323,7 @@ it('keeps the report lines identical in every file that uses them', function () 
     $rule = 'resources/claude/rules/task-agents.md';
 
     foreach ([
-        '`UI changes: yes — N after screenshots in <dir>, manifest <file>`' => [$agent, $qa, $review, $rule],
+        '`UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`' => [$agent, $qa, $review, $rule],
         '`UI changes: yes — no screenshots (<reason>)`' => [$agent, $qa],
         '`UI changes: no`' => [$agent, $qa],
         '`Before screenshots: N in <dir>, manifest <file>`' => [$agent, $qa, $review],
@@ -340,17 +340,46 @@ it('names the manifest fields and the shot naming the same way in qa-tester and 
         'resources/boost/skills/jiannius-qa-tester/SKILL.md',
         'resources/boost/skills/jiannius-ui-review/SKILL.md',
     ] as $file) {
-        foreach (['`head_sha`', '`before_note`', '`changed`', '`look_at`', '`screens`', 'r<round>', 's<NN>-'] as $name) {
+        foreach (['`head_sha`', '`before_note`', '`new`', '`changed`', '`look_at`', '`screens`', 'r<round>', 's<NN>-'] as $name) {
             expect(str_contains(uiReviewText($file), $name))->toBeTrue("{$file} no longer mentions {$name}");
         }
     }
+});
+
+it('marks a screen that is new in the PR, so no "before" is attempted for it', function () {
+    expect(uiReviewText('resources/boost/skills/jiannius-qa-tester/SKILL.md'))
+        ->toContain('`new` is a boolean on every entry')
+        ->toContain('When unsure, set `false`, so a "before" is attempted')
+        ->toContain('sets `before_note` to "New in this PR"')
+        ->toContain('only the entries with `new: false`')
+        ->toContain('is always printed, as `(0 new screens)` when there are none');
+
+    expect(uiReviewText('resources/claude/agents/qa-tester.md'))
+        ->toContain('Always print the suffix, as `(0 new screens)` when there are none')
+        ->toContain('Take no "before" shot for a new entry');
+});
+
+it('skips the before-only run when every screen is new, and shows the placeholder', function () {
+    expect(uiReviewText('resources/boost/skills/jiannius-ui-review/SKILL.md'))
+        ->toContain('Skip the before-only `qa-tester` run entirely when every entry has `new: true`')
+        ->toContain('name the entries with `new: false` by id and no others')
+        ->toContain('holding "New in this PR" for an entry with `new: true`')
+        ->toContain('A new entry\'s caption also says "New in this PR"')
+        ->toContain('<div class="shot none" data-uncommentable>');
+});
+
+it('asks a different question when every screen is new', function () {
+    expect(uiReviewText('resources/claude/rules/task-agents.md'))
+        ->toContain('When every screen is new (`M` equals `N`), ask:')
+        ->toContain('This adds new screens — review them? I\'d put the screenshots on a private claude.ai page for you to comment on, and keep a status comment on the PR.')
+        ->toContain('This involves UI changes — review it? I\'d take the "before" shots, put both on a private claude.ai page for you to comment on, and keep a status comment on the PR.');
 });
 
 // Phase 3: the wiring.
 
 it('has the routing rule ask about a review once, after a QA report', function () {
     expect(uiReviewText('resources/claude/rules/task-agents.md'))
-        ->toContain('`UI changes: yes — N after screenshots in <dir>, manifest <file>`')
+        ->toContain('`UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`')
         ->toContain('In an interactive Claude Code session only')
         ->toContain('This involves UI changes — review it?')
         ->toContain('run the `jiannius-ui-review` skill here, in this session; never hand it to an agent')

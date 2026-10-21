@@ -23,9 +23,11 @@ Use seeded or local test data only, never real customer data: these screenshots 
 
 End your report with exactly one of these as its last line:
 
-- `UI changes: yes — N after screenshots in <dir>, manifest <file>`
+- `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`
 - `UI changes: yes — no screenshots (<reason>)`
 - `UI changes: no`
+
+`M` counts the manifest's `screens` entries with `new: true` (the screen does not exist on the PR's base; when unsure, `false`). Always print the suffix, as `(0 new screens)` when there are none. Take no "before" shot for a new entry.
 
 A task that asked only for "before" screenshots ends instead with one of:
 

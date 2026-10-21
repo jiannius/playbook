@@ -325,7 +325,7 @@ it has no marketplace copy.
 
 `jiannius-ui-review` (a review of a PR's UI changes on a private claude.ai page) is a fourth, also written here. It works only in Claude Code, and still ships through Boost, as `jiannius-wrap-up` does. Shipping it Claude-only would mean playbook writing into `.claude/skills/`, which Boost manages, for one file.
 
-It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the PR's merge base with the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with.
+It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the PR's merge base with the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with. A screen that is new in the PR has no "before" to take: the manifest marks it `new`, the page shows a "New in this PR" placeholder, and when every screen is new the before-only run is skipped and the question changes to "This adds new screens — review them?".
 
 Verified on Claude Code 2.1.306 with artifact runtime contract 0.2.88, in a dry run on 2026-10-21 (skeleton-project PR #12, dashboard welcome heading and stat cards):
 
@@ -574,7 +574,7 @@ project rather than as a clash.
 
 **The routing rule is Claude-only.** `.claude/rules/playbook/task-agents.md` is the table of which
 agent takes which task. There is no `AGENTS.md` version and no agent set for other tools; see the
-exception recorded under "Settled". It also carries one paragraph for after a QA report: when the report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file>`, the main session asks once, "This involves UI changes — review it?", before starting `jiannius-ui-review`. That lives in the rule, not the skill, because the rule is always loaded and the skill is not.
+exception recorded under "Settled". It also carries one paragraph for after a QA report: when the report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`, the main session asks once, "This involves UI changes — review it?", before starting `jiannius-ui-review`. That lives in the rule, not the skill, because the rule is always loaded and the skill is not.
 
 **Data agents and staging.** `data-investigator` and `data-backfill` may run against staging, only
 when the person who asked for the task explicitly gave it. Production stays banned. The core guideline carries the
