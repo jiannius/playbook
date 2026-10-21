@@ -34,8 +34,10 @@ unsure — come from the guidelines block of this repo's agent file. This skill 
   involves UI changes — review it?", `/jiannius-ui-review <PR>`, or their own words. Otherwise ask
   that question once and stop.
 - **The PR.** Take the number from the person, the command or the QA report, then read it with
-  `gh pr view <PR> --json number,title,author,baseRefName,headRefName,headRefOid,url`. Call it
-  "PR #<N> (<what it is>)" everywhere, never the bare number.
+  `gh pr view <PR> --json number,title,author,baseRefName,headRefName,headRefOid,isCrossRepository,url`.
+  Call it "PR #<N> (<what it is>)" everywhere, never the bare number. Stop and ask the person if
+  the head branch is `dev`, `main` or `master`, or if the PR comes from a fork
+  (`isCrossRepository` is true): `pr-fixer` would be committing to a branch that is not the PR's own.
 - **A review already on the PR.** Look for this skill's status comment. Only comments by the
   current user count, because anyone can post a comment that carries the marker. Take the login from
   `gh api user --jq .login`:

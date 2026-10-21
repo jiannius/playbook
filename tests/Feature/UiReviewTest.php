@@ -232,7 +232,7 @@ it('names in the routing rule only skills playbook ships', function () {
 
 it('lets pr-fixer commit on the branch of a pull request under review', function () {
     expect(uiReviewText('resources/claude/agents/pr-fixer.md'))
-        ->toContain('unless the task names an existing branch to commit on');
+        ->toContain('unless the task names an existing branch that is not the integration branch (`dev`, `main` or `master`) to commit on');
 });
 
 it('has wrap-up leave an open review to its own cleanup', function () {
