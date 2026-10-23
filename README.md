@@ -15,7 +15,8 @@ format and adds only the enforcement Boost lacks. See
 |---|---|
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
-| **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
+| **QA** | Setting up a PR on Herd, browser-testing, filing or approving, and "after" screenshots when a PR changes the UI |
+| **UI review** | A Claude Code loop for a PR's UI changes: before/after screenshots on a private claude.ai page, your comments, fixes in rounds until you approve, a status comment on the PR while it is open, then a text summary |
 | **Task agents** | Eleven Claude Code subagents and the rule that routes work to them, written into .claude/agents/playbook/ and .claude/rules/playbook/ by boost:update |
 | **Session wrap-up** | Closing a session cleanly: what Claude Code's exit leaves behind — leftover files, switched settings, unsettled git, the handoff |
 | **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills or task agents have drifted, and when they are gitignored so a clone would never see them |
@@ -85,12 +86,11 @@ will disagree within a quarter.
 
 | Skill | From | To | State |
 |---|---|---|---|
-| `jiannius-dev` | the internal plugin marketplace | `resources/boost/skills/jiannius-dev` | **Landed here.** Marketplace copy still live |
-| `jiannius-qa-tester` | the internal plugin marketplace | `resources/boost/skills/jiannius-qa-tester` | **Landed here.** Marketplace copy still live |
+| `jiannius-dev` | the internal plugin marketplace | `resources/boost/skills/jiannius-dev` | **Landed here.** Marketplace copy retired (claude-plugins PR #10) |
+| `jiannius-qa-tester` | the internal plugin marketplace | `resources/boost/skills/jiannius-qa-tester` | **Landed here.** Marketplace copy retired (claude-plugins PR #10) |
 
-Both are useless outside a repo, so composer is the right channel. They stay in **both** places
-until `composer require jiannius/playbook` actually resolves and the repos have installed it —
-removing the marketplace copy first would leave everyone with neither.
+Both are useless outside a repo, so composer is the right channel. The marketplace copies were kept
+until the package resolved and the repos had installed it, then retired in claude-plugins PR #10.
 
 **The QA-composer question is settled.** The earlier worry was that a QA person might not have
 `composer install` run, and so would never see a skill shipped in `vendor/`. Two things close it:
@@ -102,7 +102,7 @@ at all already has composer.
 That does depend on `.claude/skills/` being **committed, not gitignored**. Keep it that way — it is
 what makes these skills reach a teammate who never runs composer.
 
-Everything else in the internal plugin marketplace stays. Seven of its nine plugins are work with no
+Everything else in the internal plugin marketplace stays. All eight of its plugins are work with no
 codebase attached.
 
 ## The line this README must hold
@@ -116,7 +116,7 @@ The specification is [`docs/playbook-install.md`](docs/playbook-install.md) — 
 for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
-`playbook:check` and its tests; five reusable CI workflows; the three repo-scoped skills at
+`playbook:check` and its tests; five reusable CI workflows; the four repo-scoped skills at
 `resources/boost/skills/`; the eleven task agents at `resources/claude/` and `playbook:sync`, which
 writes them and which `boost:update` runs for you. On Packagist since 2026-08-30. The current version is whichever is
 latest on the [releases page](https://github.com/jiannius/playbook/releases). The `v0` branch
@@ -136,9 +136,9 @@ limit needs to be increased"*. Jobs were created, assigned nothing, and failed i
 having run no steps. Public repos are unmetered, so playbook's own CI never saw it. Worth keeping
 in the record: a job that dies that fast, before checkout, is a billing state and not a code result.
 
-**Next, in order** — retire the two marketplace copies once the live repos have installed the
-package, not just the skeleton; paste the org instructions; then hooks and the
-`permissions.deny` render target.
+**Next, in order** — paste the org instructions; then hooks and the `permissions.deny` render
+target. The two marketplace copies of `jiannius-dev` and `jiannius-qa-tester` are retired
+(claude-plugins PR #10, which retired them).
 
 [`docs/adopting.md`](docs/adopting.md) is written and verified against the first host app: it is the
 repo-facing guide, six steps with the pre-flight commands that decide the inputs. `ONBOARDING.md` —

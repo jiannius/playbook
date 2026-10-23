@@ -18,4 +18,16 @@ This repo ships task agents in `.claude/agents/playbook/`. Each is a narrower as
 
 This holds even when a skill also matches: a review request goes to `pr-reviewer` although `jiannius-dev` covers review. If an agent is not among the agents available to you, because this repo or you opted out of it, do the work yourself under the rules in `AGENTS.md`. A person's explicit instruction about how to do a task wins over this table. If you are one of these agents, do not pass the task on; report back to whoever called you.
 
+## After a QA report
+
+In an interactive Claude Code session only: when a QA report — from `qa-tester`, or from the `jiannius-qa-tester` skill in this session — ends with `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`, ask the person once. When every screen is new (`M` equals `N`), ask:
+
+> This adds new screens — review them? I'd put the screenshots on a private claude.ai page for you to comment on, and keep a status comment on the PR.
+
+Otherwise ask:
+
+> This involves UI changes — review it? I'd take the "before" shots, put both on a private claude.ai page for you to comment on, and keep a status comment on the PR.
+
+On a yes, run the `jiannius-ui-review` skill here, in this session; never hand it to an agent, because an agent cannot receive the comments. On a no, or no answer, leave it, and don't ask again about that PR. Don't ask while a UI review of that PR is already open in this session: its own rounds end with the same line. If the skill is not available to you, say so rather than running a review by hand.
+
 <!-- Managed by jiannius/playbook and rewritten by boost:update. Change it in the package, or opt out in config/playbook.php and keep your own copy outside this directory. -->
