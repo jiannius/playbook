@@ -88,7 +88,8 @@ on:
           nothing from it. Turn it on for any app that has them — without it
           Pest throws PlaywrightNotInstalledException and the suite fails.
           Requires `playwright` in the project's package.json devDependencies;
-          npm ci is run for you even when build-assets is false.
+          npm ci is run for you even when build-assets is false. Also runs
+          storage:link, since a fresh checkout has no public/storage.
         type: boolean
         default: false
       parallel:
@@ -413,6 +414,14 @@ jobs:
       - name: Migrations apply from empty
         if: steps.scope.outputs.full == 'true' && inputs.check-schema
         run: php artisan migrate:fresh --seed --no-interaction
+
+      # A fresh checkout has no public/storage link, so any page that loads an
+      # asset from storage (a layout logo, say) 404s in a browser test. The 404
+      # lands on the app's catch-all route and pest-plugin-browser attaches it
+      # to whatever assertion fails, which buries the real failure.
+      - name: Link public storage
+        if: steps.scope.outputs.full == 'true' && inputs.browser-tests
+        run: php artisan storage:link --no-interaction
 
       # With no new inputs set this is plain `vendor/bin/pest`. The arguments
       # are built in bash so the flags exist only when asked for. `${args[@]+...}`
