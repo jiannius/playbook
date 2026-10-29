@@ -27,7 +27,7 @@ already in context from the guidelines block.
 
 - Work from a **GitHub issue**. Branch off **`dev`**.
 - **Conventional Commits** (`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`) — the changelog depends on them.
-- Open a **`feature → dev` PR**, check it yourself with the task agents, then request the **QA tester** as reviewer.
+- Open a **`feature → dev` PR**, check it yourself with the task agents, then ask the **lead** to review it. Don't merge your own PR unless you are the lead.
 - Release is a maintainer-controlled **`dev → main`** merge — not yours to do.
 
 ## Making a change (bug fix / enhancement)
@@ -66,7 +66,14 @@ already in context from the guidelines block.
      `pr-reviewer` verdict and its requirement check, the `qa-tester` result (or "n/a — no UI"),
      and whether you checked it by hand. Your reviewer reads this instead of re-running the agents,
      so a PR without it gets checked again from scratch.
-9. Request the **QA tester** as reviewer.
+9. **Ask the lead to review it, and don't merge it yourself.** The lead judges whether the change
+   is what the user asked for, which the self-check can't.
+   - Request the `dev-leader` team: `gh pr edit <n> --add-reviewer jiannius/dev-leader`. If
+     GitHub refuses, because the team doesn't exist or has no access to this repo, ask the
+     developer who should review. Never guess a reviewer.
+   - **If the developer is in `dev-leader`**, they merge it themselves once the self-check is
+     clean. To check, run `gh api orgs/jiannius/teams/dev-leader/memberships/<login>` with the
+     login from `gh api user -q .login`: a role means yes, a 404 means no.
 
 If you changed anything that affects how the guidelines are delivered — a new package, a Boost
 config change, an edit to `jiannius/playbook` itself — run `php artisan playbook:check` before
