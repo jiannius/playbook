@@ -68,12 +68,18 @@ already in context from the guidelines block.
      so a PR without it gets checked again from scratch.
 9. **Ask the lead to review it, and don't merge it yourself.** The lead judges whether the change
    is what the user asked for, which the self-check can't.
-   - Request the `dev-leader` team: `gh pr edit <n> --add-reviewer jiannius/dev-leader`. If
-     GitHub refuses, because the team doesn't exist or has no access to this repo, ask the
-     developer who should review. Never guess a reviewer.
-   - **If the developer is in `dev-leader`**, they merge it themselves once the self-check is
-     clean. To check, run `gh api orgs/jiannius/teams/dev-leader/memberships/<login>` with the
-     login from `gh api user -q .login`: a role means yes, a 404 means no.
+   - **First, check whether the developer is a lead.** Run
+     `gh api orgs/jiannius/teams/dev-leader/memberships/<login>` with the login from
+     `gh api user -q .login`. A role means yes: they merge it themselves once the self-check is
+     clean, and skip the rest of this step. A 404 means no.
+   - The leads are the members of the `dev-leader` team:
+     `gh api orgs/jiannius/teams/dev-leader/members -q '.[].login'`. Request each of them as a
+     reviewer: `gh pr edit <n> --add-reviewer <login>,<login>`.
+     Don't request the team itself: on our private repos GitHub dropped a team request without an
+     error.
+   - Confirm the request stuck with `gh pr view <n> --json reviewRequests`. If it's empty, or
+     the team has no one to request, ask the developer who should review. Never guess a
+     reviewer.
 
 If you changed anything that affects how the guidelines are delivered — a new package, a Boost
 config change, an edit to `jiannius/playbook` itself — run `php artisan playbook:check` before

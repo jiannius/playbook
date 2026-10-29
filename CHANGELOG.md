@@ -20,7 +20,8 @@ Upgrading across several minors? Do each minor's **Upgrading** steps in order, o
   the QA tester.
 - `jiannius-dev`: the developer records those results in the PR description under a
   `Self-check` heading, so the reviewer doesn't re-run them.
-- `jiannius-dev`: the PR goes to the `dev-leader` team for review instead of the QA tester.
+- `jiannius-dev`: the PR goes to the members of the `dev-leader` team for review instead of
+  the QA tester. Each repo needs the `dev` (write) and `dev-leader` (maintain) teams.
   Developers don't merge their own PRs; members of `dev-leader` merge theirs once the
   self-check is clean.
 - `pr-reviewer` reads the linked issue and adds a requirement check: each thing the issue asks
