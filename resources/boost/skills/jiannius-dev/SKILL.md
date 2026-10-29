@@ -68,12 +68,14 @@ already in context from the guidelines block.
      so a PR without it gets checked again from scratch.
 9. **Ask the lead to review it, and don't merge it yourself.** The lead judges whether the change
    is what the user asked for, which the self-check can't.
+   - The `dev-leader` team lives in the org that owns this repo, which is not always `jiannius`:
+     `gh repo view --json owner -q .owner.login` gives `<org>`.
    - **First, check whether the developer is a lead.** Run
-     `gh api orgs/jiannius/teams/dev-leader/memberships/<login>` with the login from
+     `gh api orgs/<org>/teams/dev-leader/memberships/<login>` with the login from
      `gh api user -q .login`. A role means yes: they merge it themselves once the self-check is
      clean, and skip the rest of this step. A 404 means no.
    - The leads are the members of the `dev-leader` team:
-     `gh api orgs/jiannius/teams/dev-leader/members -q '.[].login'`. Request each of them as a
+     `gh api orgs/<org>/teams/dev-leader/members -q '.[].login'`. Request each of them as a
      reviewer: `gh pr edit <n> --add-reviewer <login>,<login>`.
      Don't request the team itself: on our private repos GitHub dropped a team request without an
      error.
