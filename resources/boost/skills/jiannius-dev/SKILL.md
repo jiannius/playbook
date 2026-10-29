@@ -27,7 +27,7 @@ already in context from the guidelines block.
 
 - Work from a **GitHub issue**. Branch off **`dev`**.
 - **Conventional Commits** (`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`) — the changelog depends on them.
-- Open a **`feature → dev` PR**, request the **QA tester** as reviewer.
+- Open a **`feature → dev` PR**, check it yourself with the task agents, then request the **QA tester** as reviewer.
 - Release is a maintainer-controlled **`dev → main`** merge — not yours to do.
 
 ## Making a change (bug fix / enhancement)
@@ -52,7 +52,17 @@ already in context from the guidelines block.
    suite once before you push — is the guidelines block's rule, and this skill does not restate it.
 5. Run **`npm run build`** when you add Tailwind classes or JS (hashed assets won't render otherwise).
 6. Commit using **Conventional Commits**.
-7. Open a **`feature → dev` PR**, **link the issue**, and request the **QA tester** as reviewer.
+7. Open a **`feature → dev` PR** and **link the issue**.
+8. **Check it yourself before anyone else does.** Skip this for a PR that only touches docs or
+   config.
+   - Run **`pr-reviewer`** on the PR. Fix every finding behind a "request changes" verdict, and
+     push before going on.
+   - If the PR touches the UI — views, Livewire components, CSS or JS — run **`qa-tester`** on it
+     too, and fix what it reports.
+   - **Recommended:** then click through the change in your own browser. The agents miss what
+     only a person notices: whether it looks right, reads clearly and feels quick, on real data
+     and at phone width.
+9. Request the **QA tester** as reviewer.
 
 If you changed anything that affects how the guidelines are delivered — a new package, a Boost
 config change, an edit to `jiannius/playbook` itself — run `php artisan playbook:check` before

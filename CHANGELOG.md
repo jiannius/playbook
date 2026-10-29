@@ -11,6 +11,28 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## Unreleased
+
+### Changed
+
+- `jiannius-dev`: after opening a PR, the developer runs `pr-reviewer` on it, and `qa-tester`
+  too when it touches the UI, then clicks through it by hand (recommended), before requesting
+  the QA tester.
+
+### Upgrading
+
+Run `php artisan boost:update` and commit `.claude/skills/`.
+
+## v0.6.3 — 2026-10-29
+
+### Added
+
+- `CHANGELOG.md` ships in the package, with every release's upgrade steps. (#31)
+
+### Upgrading
+
+Nothing to do.
+
 ## v0.6.2 — 2026-10-23
 
 ### Fixed
