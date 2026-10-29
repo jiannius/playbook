@@ -120,7 +120,8 @@ for delivery and enforcement. Against it:
 `resources/boost/skills/`; the eleven task agents at `resources/claude/` and `playbook:sync`, which
 writes them and which `boost:update` runs for you. On Packagist since 2026-08-30. The current version is whichever is
 latest on the [releases page](https://github.com/jiannius/playbook/releases). The `v0` branch
-follows each release, so workflows called at `@v0` stay current.
+follows each release, so workflows called at `@v0` stay current. [`CHANGELOG.md`](CHANGELOG.md)
+ships in the package with each release's upgrade steps; add the new entry in the release PR.
 
 **Verified end to end** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the
 package, names it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`,
