@@ -18,10 +18,14 @@ Upgrading across several minors? Do each minor's **Upgrading** steps in order, o
 - `jiannius-dev`: after opening a PR, the developer runs `pr-reviewer` on it, and `qa-tester`
   too when it touches the UI, then clicks through it by hand (recommended), before requesting
   the QA tester.
+- `jiannius-dev`: the developer records those results in the PR description under a
+  `Self-check` heading, so the reviewer doesn't re-run them.
+- `pr-reviewer` reads the linked issue and adds a requirement check: each thing the issue asks
+  for, marked covered, missing or unclear.
 
 ### Upgrading
 
-Run `php artisan boost:update` and commit `.claude/skills/`.
+Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
 
 ## v0.6.3 — 2026-10-29
 

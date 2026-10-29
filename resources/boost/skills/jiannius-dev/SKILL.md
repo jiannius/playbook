@@ -62,6 +62,10 @@ already in context from the guidelines block.
    - **Recommended:** then click through the change in your own browser. The agents miss what
      only a person notices: whether it looks right, reads clearly and feels quick, on real data
      and at phone width.
+   - **Record the results in the PR description**, under a `Self-check` heading: the
+     `pr-reviewer` verdict and its requirement check, the `qa-tester` result (or "n/a — no UI"),
+     and whether you checked it by hand. Your reviewer reads this instead of re-running the agents,
+     so a PR without it gets checked again from scratch.
 9. Request the **QA tester** as reviewer.
 
 If you changed anything that affects how the guidelines are delivered — a new package, a Boost
