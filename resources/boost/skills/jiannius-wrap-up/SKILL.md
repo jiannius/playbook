@@ -75,6 +75,12 @@ session is untraced. Tracked files are never removed here.
 hand, so you cannot know an upload happened. A screenshot tied to a filed or pending bug is listed
 and kept unless the person says they are done with it.
 
+**Exception — an open UI review.** Treat anything under `storage/app/ui-review/pr-<N>/` as an open
+review, unless that PR's status comment carries the `jiannius-ui-review:closed` marker. Its
+screenshots belong to `jiannius-ui-review`, which deletes them, and its page, when the review closes.
+Leave both alone, and list the review under *Still open* in the handoff with its page link. The
+review's status comment on the PR says how to pick it up again.
+
 A `dd()`, `dump()`, `ray()` or debug route left in code is a change, not a clean-up. Raise it in
 step 5; don't silently edit committed work.
 
