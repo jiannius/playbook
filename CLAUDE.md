@@ -16,3 +16,11 @@ with the skill's *Finding a chat* step. Show TJ the draft and send it only when 
 - The release link.
 
 Skip a release only when TJ says so.
+
+## This repo is public: name no other repo
+
+Anything that lands on GitHub here is world-readable: files, commit messages (a squash merge copies
+the branch's commit messages into its body), PR titles, bodies and comments, issues and release
+notes. Never name another repo or org in them, whether a client's or one of our own products. Write
+"a consumer app", "a client repo" or "the app skeleton" instead. Naming the team is fine. Before
+every commit and every `gh` write here, check the text for repo names.
