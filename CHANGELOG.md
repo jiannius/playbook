@@ -11,26 +11,26 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
-## Unreleased
+## v0.6.4 — 2026-10-30
 
 ### Changed
 
 - `jiannius-dev`: after opening a PR, the developer runs `pr-reviewer` on it, and `qa-tester`
-  too when it touches the UI, then clicks through it by hand (recommended), before requesting
-  the QA tester.
+  too when it touches the UI, then clicks through it by hand (recommended). (#32)
 - `jiannius-dev`: the developer records those results in the PR description under a
   `Self-check` heading, so the reviewer doesn't re-run them.
-- `jiannius-dev`: the PR goes to the members of the `dev-leader` team for review instead of
-  the QA tester. The teams live in the org that owns the repo, and each repo needs `dev` (write) and
-  `dev-leader` (maintain).
-  Developers don't merge their own PRs; members of `dev-leader` merge theirs once the
-  self-check is clean.
+- `jiannius-dev`: the PR goes to the members of the `dev-leader` team for review, instead of
+  the QA tester. Developers don't merge their own PRs; members of `dev-leader` merge theirs
+  once the self-check is clean.
 - `pr-reviewer` reads the linked issue and adds a requirement check: each thing the issue asks
   for, marked covered, missing or unclear.
 
 ### Upgrading
 
-Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+1. Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+2. In the GitHub org that owns the repo, create two visible teams with exactly these slugs:
+   `dev` (write on the repo) and `dev-leader` (maintain). Put the leads in `dev-leader`.
+   Without them, step 9 asks the developer who should review.
 
 ## v0.6.3 — 2026-10-29
 
