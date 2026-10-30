@@ -11,12 +11,12 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
-## Unreleased
+## v0.6.5 — 2026-10-30
 
 ### Added
 
 - `jiannius-use-cases`: generates or updates an app's use cases in `docs/use-cases/` from its code
-  and GitHub issues, and publishes a private page to read them. Say "generate the use cases".
+  and GitHub issues, and publishes a private page to read them. Say "generate the use cases". (#36)
 
 ### Changed
 
