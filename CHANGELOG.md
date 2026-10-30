@@ -11,6 +11,26 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## v0.6.5 — 2026-10-30
+
+### Added
+
+- `jiannius-use-cases`: generates or updates an app's use cases in `docs/use-cases/` from its code
+  and GitHub issues, and publishes a private page to read them. Say "generate the use cases". (#36)
+
+### Changed
+
+- `qa-tester` runs the use cases a PR touches when the repo has `docs/use-cases/`, and reports a
+  pass/fail table by use-case ID, plus any behaviour no use case covers.
+- `jiannius-dev`: a change that alters a flow a use case describes updates that use case in the
+  same PR.
+- `pr-reviewer` flags a PR that changes a flow in `docs/use-cases/` without updating it.
+
+### Upgrading
+
+1. Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+2. Optional: say "generate the use cases" to create `docs/use-cases/`, and commit it.
+
 ## v0.6.4 — 2026-10-30
 
 ### Changed

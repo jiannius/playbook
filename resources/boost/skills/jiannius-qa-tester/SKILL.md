@@ -74,6 +74,13 @@ php artisan migrate
 
 - Read the **PR description + every linked issue** — that is your test scope. Skim `CHANGELOG.md` (top "Unreleased" section) for context.
 - If a commit body has a `Test:` note, follow it — it's the developer's explicit "verify this."
+- **If the repo under test has `docs/use-cases/`, test against it.** Match the screens and features
+  the PR changes to the use cases they touch, by area and by each use case's trigger and flow. Run
+  those first, using each one's **Given** for setup, then add the PR-specific checks above. When the
+  tester asks for "the full regression", run every use case. Without the folder, test from the PR
+  and its issues, as before.
+- **You never write use cases.** If the PR adds behaviour no use case covers, say so in your report
+  (step 5) and leave the writing to the developer.
 
 ## 3. Test it — in the browser, like a real user
 
@@ -92,7 +99,7 @@ Open a GitHub issue with the repo's **"QA bug report"** template:
 gh issue create --template qa-bug.yml
 ```
 
-Include: the PR/branch, exact **steps to reproduce**, **expected vs actual**. Reference the PR so the developer connects it. The template auto-applies the `bug` label. Then the tester clicks **Request changes** on the PR.
+Include: the PR/branch, exact **steps to reproduce**, **expected vs actual**. Reference the PR so the developer connects it. When a use case failed, **name its ID** (`INV-03`) in the issue. The template auto-applies the `bug` label. Then the tester clicks **Request changes** on the PR.
 
 **Attach a screenshot whenever you can:**
 
@@ -110,6 +117,10 @@ Once a bug reproduces, you may do a **shallow read** of the code to pin the like
 ## 5. Sign off (when it passes)
 
 When the change works and looks right, the tester submits an **Approve** review on the PR (a short "Testing done" comment). That's the signal for the developer to proceed.
+
+When you tested against `docs/use-cases/`, the QA result lists **each use case you ran as a pass/fail
+table, by ID**, and below it lists any behaviour the PR adds that **no use case covers**, marked "not
+covered by a use case — consider adding one". Give the same table when the result is a fail.
 
 ## 6. Hand the checkout back
 

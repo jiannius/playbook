@@ -320,8 +320,10 @@ The task agents are on for every repo with Claude Code enabled. Three ways to ch
 - The task agents are in `.claude/agents/playbook/`, with their routing rule in
   `.claude/rules/playbook/`. Each teammate restarts Claude Code once after their first pull: a
   new agents directory is only picked up at startup.
-- The three repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-wrap-up` — are
-  now in the session for anyone working in this repo, from `.claude/skills/`. The marketplace
+- The four repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-use-cases`,
+  `jiannius-wrap-up` — are now in the session for anyone working in this repo, from
+  `.claude/skills/`. Running `jiannius-use-cases` is optional: say "generate the use cases" to
+  write `docs/use-cases/`, and the qa-tester will test against it. The marketplace
   copies of the first two are mirrors of the same text and can be uninstalled once every repo a
   person opens has adopted the package.
 - Every `composer update` re-runs `boost:update` through `post-update-cmd`, so the guidelines and
