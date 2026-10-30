@@ -16,6 +16,7 @@ format and adds only the enforcement Boost lacks. See
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving |
+| **Use cases** | Generating an app's `docs/use-cases/` from its code and issues, plus a page to read them; the qa-tester tests against them and the dev and reviewer keep them current |
 | **Task agents** | Eleven Claude Code subagents and the rule that routes work to them, written into .claude/agents/playbook/ and .claude/rules/playbook/ by boost:update |
 | **Session wrap-up** | Closing a session cleanly: what Claude Code's exit leaves behind — leftover files, switched settings, unsettled git, the handoff |
 | **`playbook:check`** | The CI gate. Fails when a repo's agent files are stale, when its installed skills or task agents have drifted, and when they are gitignored so a clone would never see them |
