@@ -50,6 +50,8 @@ already in context from the guidelines block.
    unrelated code and buries the diff.
 4. **Add or update the test** for the change and run it. Scope — minimum set while you work, whole
    suite once before you push — is the guidelines block's rule, and this skill does not restate it.
+   If the repo has `docs/use-cases/` and your change alters a flow a use case describes, **update
+   that use case in the same PR**, or add one for a new flow. Keep its ID; never renumber.
 5. Run **`npm run build`** when you add Tailwind classes or JS (hashed assets won't render otherwise).
 6. Commit using **Conventional Commits**.
 7. Open a **`feature → dev` PR** and **link the issue**.
@@ -111,6 +113,7 @@ When asked to review, check the diff against Jiannius conventions and report fin
 - Uses **Atom components** rather than bespoke UI where applicable.
 - **Pint-clean**; tests present and green; `npm run build` covered if Tailwind/JS changed.
 - Agent files current — `playbook:check` passes.
+- Use cases updated when the PR changes a flow described in `docs/use-cases/`.
 
 ## Guardrails (role-specific)
 
