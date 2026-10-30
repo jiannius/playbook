@@ -18,9 +18,18 @@ function shippedSkillDirs(): array
         ->all();
 }
 
-it('ships the three repo-scoped skills', function () {
+it('ships the four repo-scoped skills', function () {
     expect(array_keys(shippedSkillDirs()))
-        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester', 'jiannius-wrap-up']);
+        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester', 'jiannius-use-cases', 'jiannius-wrap-up']);
+});
+
+it('keeps the use-case template in step with the format in the skill', function () {
+    $dir = shippedSkillDirs()['jiannius-use-cases'];
+
+    preg_match('/```markdown\n(.*?)\n```/s', (string) file_get_contents($dir.'/template.md'), $matches);
+
+    expect($matches[1] ?? '')->not->toBe('');
+    expect(file_get_contents($dir.'/SKILL.md'))->toContain($matches[1]);
 });
 
 it('gives every skill the SKILL.md filename Boost looks for', function () {
