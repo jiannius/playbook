@@ -27,7 +27,7 @@ already in context from the guidelines block.
 
 - Work from a **GitHub issue**. Branch off **`dev`**.
 - **Conventional Commits** (`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`) — the changelog depends on them.
-- Open a **`feature → dev` PR**, request the **QA tester** as reviewer.
+- Open a **`feature → dev` PR**, check it yourself with the task agents, then ask the **lead** to review it. Don't merge your own PR unless you are the lead.
 - Release is a maintainer-controlled **`dev → main`** merge — not yours to do.
 
 ## Making a change (bug fix / enhancement)
@@ -52,7 +52,36 @@ already in context from the guidelines block.
    suite once before you push — is the guidelines block's rule, and this skill does not restate it.
 5. Run **`npm run build`** when you add Tailwind classes or JS (hashed assets won't render otherwise).
 6. Commit using **Conventional Commits**.
-7. Open a **`feature → dev` PR**, **link the issue**, and request the **QA tester** as reviewer.
+7. Open a **`feature → dev` PR** and **link the issue**.
+8. **Check it yourself before anyone else does.** Skip this for a PR that only touches docs or
+   config.
+   - Run **`pr-reviewer`** on the PR. Fix every finding behind a "request changes" verdict, and
+     push before going on.
+   - If the PR touches the UI — views, Livewire components, CSS or JS — run **`qa-tester`** on it
+     too, and fix what it reports.
+   - **Recommended:** then click through the change in your own browser. The agents miss what
+     only a person notices: whether it looks right, reads clearly and feels quick, on real data
+     and at phone width.
+   - **Record the results in the PR description**, under a `Self-check` heading: the
+     `pr-reviewer` verdict and its requirement check, the `qa-tester` result (or "n/a — no UI"),
+     and whether you checked it by hand. Your reviewer reads this instead of re-running the agents,
+     so a PR without it gets checked again from scratch.
+9. **Ask the lead to review it, and don't merge it yourself.** The lead judges whether the change
+   is what the user asked for, which the self-check can't.
+   - The `dev-leader` team lives in the org that owns this repo, which is not always `jiannius`:
+     `gh repo view --json owner -q .owner.login` gives `<org>`.
+   - **First, check whether the developer is a lead.** Run
+     `gh api orgs/<org>/teams/dev-leader/memberships/<login>` with the login from
+     `gh api user -q .login`. A role means yes: they merge it themselves once the self-check is
+     clean, and skip the rest of this step. A 404 means no.
+   - The leads are the members of the `dev-leader` team:
+     `gh api orgs/<org>/teams/dev-leader/members -q '.[].login'`. Request each of them as a
+     reviewer: `gh pr edit <n> --add-reviewer <login>,<login>`.
+     Don't request the team itself: on our private repos GitHub dropped a team request without an
+     error.
+   - Confirm the request stuck with `gh pr view <n> --json reviewRequests`. If it's empty, or
+     the team has no one to request, ask the developer who should review. Never guess a
+     reviewer.
 
 If you changed anything that affects how the guidelines are delivered — a new package, a Boost
 config change, an edit to `jiannius/playbook` itself — run `php artisan playbook:check` before
