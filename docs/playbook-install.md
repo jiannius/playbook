@@ -4,7 +4,7 @@ How the standard reaches a repo, what Laravel Boost already handles, and the fou
 gaps `playbook` fills.
 
 Status: **adopted and delivering.** Guidelines, `playbook:check`, the five reusable workflows, the
-four skills and the Claude Code task agents exist; the package resolves from Packagist; and the app skeleton installs it and
+five skills and the Claude Code task agents exist; the package resolves from Packagist; and the app skeleton installs it and
 runs the whole chain in CI. See the README's Status for where each piece stands and what is next.
 
 > **Revised 2026-08-28.** An earlier draft specified a full renderer — agent registry, multi-target
@@ -323,11 +323,14 @@ PR on Herd and browser-testing it). Both now live at `resources/boost/skills/<na
 `jiannius-wrap-up` (closing a session cleanly) is a third skill, written for the package directly;
 it has no marketplace copy.
 
-`jiannius-ui-review` (a review of a PR's UI changes on a private claude.ai page) is a fourth, also written here. It works only in Claude Code, and still ships through Boost, as `jiannius-wrap-up` does. Shipping it Claude-only would mean playbook writing into `.claude/skills/`, which Boost manages, for one file.
+`jiannius-use-cases` (generating an app's `docs/use-cases/` from its code and issues, and a page to
+read them) is a fourth, also written for the package directly, with no marketplace copy.
+
+`jiannius-ui-review` (a review of a PR's UI changes on a private claude.ai page) is a fifth, also written here. It works only in Claude Code, and still ships through Boost, as `jiannius-wrap-up` does. Shipping it Claude-only would mean playbook writing into `.claude/skills/`, which Boost manages, for one file.
 
 It runs on the main thread and sets no `model`, `effort` or `allowed-tools`. A skill's model and effort last only the turn that invokes it, and a review spans many; the cost sits in `qa-tester` and `pr-fixer`. A normal QA run takes only "after" screenshots. "Before" shots need the PR's merge base with the base branch built, so they are taken only when someone says yes to a review. While a review is open, one status comment on the PR carries the page link and the words to resume with. A screen that is new in the PR has no "before" to take: the manifest marks it `new`, the page shows a "New in this PR" placeholder, and when every screen is new the before-only run is skipped and the question changes to "This adds new screens — review them?".
 
-Verified on Claude Code 2.1.306 with artifact runtime contract 0.2.88, in a dry run on 2026-10-21 (skeleton-project PR #12, dashboard welcome heading and stat cards):
+Verified on Claude Code 2.1.306 with artifact runtime contract 0.2.88, in a dry run on 2026-10-21 (a dummy PR on the app skeleton, changing the dashboard welcome heading and stat cards):
 
 - In default mode, starting an agent did not prompt in the dry run (Claude Code 2.1.306), so the skill needs no `allowed-tools`.
 - Each page publish prompts once.

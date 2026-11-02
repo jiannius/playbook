@@ -16,6 +16,7 @@ format and adds only the enforcement Boost lacks. See
 | **Org rules** | Production is off-limits, where secrets go, product naming, company voice — shipped as Boost guidelines |
 | **Dev workflow** | Changing an existing Laravel project: branch off dev, Conventional Commits, review |
 | **QA** | Setting up a PR on Herd, browser-testing, filing or approving, and "after" screenshots when a PR changes the UI |
+| **Use cases** | Generating an app's `docs/use-cases/` from its code and issues, plus a page to read them; the qa-tester tests against them and the dev and reviewer keep them current |
 | **UI review** | A Claude Code loop for a PR's UI changes: before/after screenshots on a private claude.ai page, your comments, fixes in rounds until you approve, a status comment on the PR while it is open, then a text summary |
 | **Task agents** | Eleven Claude Code subagents and the rule that routes work to them, written into .claude/agents/playbook/ and .claude/rules/playbook/ by boost:update |
 | **Session wrap-up** | Closing a session cleanly: what Claude Code's exit leaves behind — leftover files, switched settings, unsettled git, the handoff |
@@ -116,11 +117,12 @@ The specification is [`docs/playbook-install.md`](docs/playbook-install.md) — 
 for delivery and enforcement. Against it:
 
 **Built** — org rules as a Boost guideline (`resources/boost/guidelines/core.blade.php`);
-`playbook:check` and its tests; five reusable CI workflows; the four repo-scoped skills at
+`playbook:check` and its tests; five reusable CI workflows; the five repo-scoped skills at
 `resources/boost/skills/`; the eleven task agents at `resources/claude/` and `playbook:sync`, which
 writes them and which `boost:update` runs for you. On Packagist since 2026-08-30. The current version is whichever is
 latest on the [releases page](https://github.com/jiannius/playbook/releases). The `v0` branch
-follows each release, so workflows called at `@v0` stay current.
+follows each release, so workflows called at `@v0` stay current. [`CHANGELOG.md`](CHANGELOG.md)
+ships in the package with each release's upgrade steps; add the new entry in the release PR.
 
 **Verified end to end** — the app skeleton's wiring, jiannius/skeleton-project#4: it takes the
 package, names it in `boost.json` `packages`, seeds the `skills` key, commits `.claude/skills/`,

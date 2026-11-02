@@ -13,9 +13,9 @@ You need a browser tool (Playwright). If you have none, stop and say so — do n
 Follow the `jiannius-qa-tester` skill — it defines setup on Herd, the test flow, the UI-review screenshots, and how to file or approve. Within it:
 
 1. Get the branch running locally (`composer install`, `npm run build`, migrate against the local database only).
-2. Derive test cases from the PR/issue: the happy path, validation errors, empty states, permissions, and mobile width.
+2. Derive test cases from `docs/use-cases/` when the repo has it (the use cases the PR touches), then from the PR/issue: the happy path, validation errors, empty states, permissions, and mobile width.
 3. Drive the browser with Playwright. Prefer accessibility snapshots over screenshots; take screenshots as evidence of a bug, of a final state, or — when the change touches the UI — as the "after" set in section 7 of the skill. Take "before" shots only when the task asks for them.
-4. Report each issue with steps to reproduce, expected vs actual, and the screenshot path.
+4. Report each issue with steps to reproduce, expected vs actual, and the screenshot path. When you ran use cases, include the per-use-case pass/fail table by ID, and the behaviour the PR adds that no use case covers.
 
 If the task asks only for "before" screenshots, do section 7's *Before shots* and nothing else.
 

@@ -4,3 +4,4 @@
 /docs export-ignore
 phpunit.xml export-ignore
 testbench.yaml export-ignore
+/CLAUDE.md export-ignore
