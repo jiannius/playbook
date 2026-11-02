@@ -11,6 +11,27 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## v0.6.6 — 2026-11-02
+
+### Added
+
+- `jiannius-ui-review` (Claude Code only): a review loop for a PR's UI changes. It puts the
+  before/after screenshots on a private claude.ai page, you comment there, and Claude fixes them in
+  rounds until you approve. While the review is open, one status comment on the PR carries the link.
+  Start it with `/jiannius-ui-review <PR>`, or say yes when asked after a QA run. (#28)
+
+### Changed
+
+- `qa-tester` takes "after" screenshots when a PR changes the UI, using test data only, and ends
+  its report with a `UI changes:` line. It never runs `herd link`, `herd secure` or `herd unlink`.
+- After a QA report with `UI changes: yes`, the session asks once whether to start a UI review.
+  `jiannius-dev` step 8 says so.
+
+### Upgrading
+
+1. Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+2. Restart Claude Code once, so the new skill is picked up.
+
 ## v0.6.5 — 2026-10-30
 
 ### Added

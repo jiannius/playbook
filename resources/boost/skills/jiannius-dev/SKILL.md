@@ -60,7 +60,9 @@ already in context from the guidelines block.
    - Run **`pr-reviewer`** on the PR. Fix every finding behind a "request changes" verdict, and
      push before going on.
    - If the PR touches the UI — views, Livewire components, CSS or JS — run **`qa-tester`** on it
-     too, and fix what it reports.
+     too, and fix what it reports. When its report ends `UI changes: yes`, you'll be asked once
+     whether to start a UI review (`jiannius-ui-review`, Claude Code only): say yes to look at the
+     before/after screenshots on a private page and comment on them.
    - **Recommended:** then click through the change in your own browser. The agents miss what
      only a person notices: whether it looks right, reads clearly and feels quick, on real data
      and at phone width.

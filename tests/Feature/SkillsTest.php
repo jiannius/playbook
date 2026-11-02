@@ -18,9 +18,9 @@ function shippedSkillDirs(): array
         ->all();
 }
 
-it('ships the four repo-scoped skills', function () {
+it('ships the five repo-scoped skills', function () {
     expect(array_keys(shippedSkillDirs()))
-        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester', 'jiannius-use-cases', 'jiannius-wrap-up']);
+        ->toEqualCanonicalizing(['jiannius-dev', 'jiannius-qa-tester', 'jiannius-ui-review', 'jiannius-use-cases', 'jiannius-wrap-up']);
 });
 
 it('keeps the use-case template in step with the format in the skill', function () {

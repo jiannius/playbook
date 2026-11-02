@@ -320,13 +320,15 @@ The task agents are on for every repo with Claude Code enabled. Three ways to ch
 - The task agents are in `.claude/agents/playbook/`, with their routing rule in
   `.claude/rules/playbook/`. Each teammate restarts Claude Code once after their first pull: a
   new agents directory is only picked up at startup.
-- The four repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-use-cases`,
-  `jiannius-wrap-up` — are now in the session for anyone working in this repo, from
-  `.claude/skills/`. Running `jiannius-use-cases` is optional: say "generate the use cases" to
-  write `docs/use-cases/`, and the qa-tester will test against it. The marketplace
-  copies of the first two are mirrors of the same text and can be uninstalled once every repo a
-  person opens has adopted the package.
+- The five repo-scoped skills — `jiannius-dev`, `jiannius-qa-tester`, `jiannius-use-cases`,
+  `jiannius-wrap-up` and, for Claude Code only, `jiannius-ui-review` — are now in the session for
+  anyone working in this repo, from `.claude/skills/`. Running `jiannius-use-cases` is optional:
+  say "generate the use cases" to write `docs/use-cases/`, and the qa-tester will test against it.
+  The marketplace copies of the first two are retired; anyone who still has them installed can
+  uninstall them.
 - Every `composer update` re-runs `boost:update` through `post-update-cmd`, so the guidelines and
   skills stay current on their own. CI catches it when they do not.
 - Anything you turned off in step 5 (`check-audit`, `check-secrets`) is a note to come back, not a
   decision. Put it in an issue.
+- A UI review keeps its screenshots in `storage/app/ui-review/`. Laravel's default `storage/app/.gitignore` ignores it; `git check-ignore storage/app/ui-review/x.png` prints the path when it does.
+- In Claude Code's default permission mode, a QA run asks for permission for each Playwright tool it uses. To stop that, allow your Playwright server's tools in your own settings: run `/permissions` and add the server's name as the prompt shows it (for the Playwright plugin, `mcp__plugin_playwright_playwright`). That is a personal setting; nothing in the repo changes.
