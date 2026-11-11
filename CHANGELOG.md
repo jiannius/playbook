@@ -11,6 +11,24 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## Unreleased
+
+### Changed
+
+- `qa-tester` runs its own headless Playwright server, declared in its frontmatter, so its browser
+  ends with the agent and no Chrome window is left open. It no longer uses the Playwright plugin's
+  tools. The `jiannius-qa-tester` skill and the agent both end a run with `browser_close`, and
+  close each context they open.
+- To watch QA, ask for it ("QA this where I can see it"): the routing rule has the main session run
+  the `jiannius-qa-tester` skill itself, in the visible plugin browser, instead of the agent.
+
+### Upgrading
+
+1. Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+2. If you allowed the Playwright plugin's tools to skip permission prompts, also allow
+   `mcp__playwright` for the agent (see [adopting.md](docs/adopting.md)).
+3. Restart Claude Code once. The first agent QA run downloads `@playwright/mcp` through `npx`.
+
 ## v0.6.6 — 2026-11-02
 
 ### Added
