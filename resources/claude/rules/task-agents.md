@@ -16,7 +16,7 @@ This repo ships task agents in `.claude/agents/playbook/`. Each is a narrower as
 | A data mismatch, a missing sync, or a report that won't tie out | `data-investigator` |
 | Updating a shared dependency, such as Atom, in this project | `dependency-updater` |
 
-This holds even when a skill also matches: a review request goes to `pr-reviewer` although `jiannius-dev` covers review. If an agent is not among the agents available to you, because this repo or you opted out of it, do the work yourself under the rules in `AGENTS.md`. A person's explicit instruction about how to do a task wins over this table. If you are one of these agents, do not pass the task on; report back to whoever called you.
+This holds even when a skill also matches: a review request goes to `pr-reviewer` although `jiannius-dev` covers review. If an agent is not among the agents available to you, because this repo or you opted out of it, do the work yourself under the rules in `AGENTS.md`. A person's explicit instruction about how to do a task wins over this table. When a person asks to watch QA ("QA this where I can see it"), run the `jiannius-qa-tester` skill in this session rather than handing it to `qa-tester`: the agent's browser is hidden, and the main session's is visible. If you are one of these agents, do not pass the task on; report back to whoever called you.
 
 ## After a QA report
 

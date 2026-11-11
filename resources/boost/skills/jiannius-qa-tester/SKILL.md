@@ -41,7 +41,7 @@ git branch --show-current
   you would be testing the PR plus their edits. Don't stash or discard them yourself.
 - **Remember the starting branch** — step 6 returns to it.
 - **Asked only for "before" screenshots** (a UI review asks for these)? Do section 7's *Before
-  shots* and nothing else: skip the rest of this section and sections 2 to 6. It has its own way back.
+  shots* and nothing else: skip the rest of this section and sections 2 to 5. It has its own way back, and ends with section 6's last step: close the browser.
 
 Then, from the repo being tested:
 
@@ -137,6 +137,8 @@ git checkout <starting-branch>
 Run the rollback only if step 1 ran the PR's migrations; `<N>` is how many it added. Roll back **before** switching branches — the PR's migration files are gone once you leave it, and
 the local schema would stay on the PR's version, so the next PR gets tested against the wrong database.
 Then `npm run build` again if the tester goes back to using the app on that branch.
+
+Last, close the browser. Do it whether the PR passed, failed or you stopped early: make `browser_close` your last browser call, after every screenshot. Any browser call after it opens a new one. Close each context you open with `newContext()` as soon as you are done with it. Screenshots already saved to disk, including section 7's, are unaffected.
 
 ## 7. Screenshots for a UI review (Claude Code only)
 
