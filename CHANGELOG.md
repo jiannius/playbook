@@ -11,6 +11,29 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## v0.6.9 — 2026-11-24
+
+### Added
+
+- An always-on rule, `.claude/rules/playbook/self-check.md`. Before a pull request is called ready,
+  the session runs `pr-reviewer`, runs `qa-tester` when the PR touches the UI, waits for green CI,
+  and writes a `## Self-check` section in the PR description. It skips docs-only, config-only and
+  release PRs. Task agents report back instead of running it. It's a rule because a rule always
+  loads, and the skill that held this step sometimes didn't. (#41)
+
+### Changed
+
+- `jiannius-dev` step 8 waits for green CI (`gh pr checks <n> --watch`) and writes the
+  `Self-check` record last, with "CI green" in it. (#41)
+- `pr-reviewer`: when a diff copies how a sibling field, status or case is handled, it checks every
+  place the sibling is handled, and a missing place is a finding. (#41)
+
+### Upgrading
+
+1. Run `php artisan boost:update` and commit `.claude/rules/`, `.claude/skills/` and
+   `.claude/agents/`.
+2. Restart Claude Code once.
+
 ## v0.6.8 — 2026-11-24
 
 ### Fixed
