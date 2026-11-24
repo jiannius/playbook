@@ -56,20 +56,25 @@ already in context from the guidelines block.
 6. Commit using **Conventional Commits**.
 7. Open a **`feature → dev` PR** and **link the issue**.
 8. **Check it yourself before anyone else does.** Skip this for a PR that only touches docs or
-   config.
+   config, and for the release PR (the integration branch into `main`). The always-on rule
+   `self-check.md` is the short form of this step.
    - Run **`pr-reviewer`** on the PR. Fix every finding behind a "request changes" verdict, and
      push before going on.
    - If the PR touches the UI — views, Livewire components, CSS or JS — run **`qa-tester`** on it
      too, and fix what it reports. When its report ends `UI changes: yes`, you'll be asked once
      whether to start a UI review (`jiannius-ui-review`, Claude Code only): say yes to look at the
      before/after screenshots on a private page and comment on them.
+   - **Wait for CI to go green** on the PR head: `gh pr checks <n> --watch`. If a check is red,
+     fix it, push, and wait again. Don't write the `Self-check` record while any check is pending
+     or red.
    - **Recommended:** then click through the change in your own browser. The agents miss what
      only a person notices: whether it looks right, reads clearly and feels quick, on real data
      and at phone width.
-   - **Record the results in the PR description**, under a `Self-check` heading: the
-     `pr-reviewer` verdict and its requirement check, the `qa-tester` result (or "n/a — no UI"),
-     and whether you checked it by hand. Your reviewer reads this instead of re-running the agents,
-     so a PR without it gets checked again from scratch.
+   - **Record the results last, in the PR description** (not a comment), under a `## Self-check`
+     heading: the `pr-reviewer` verdict and its requirement check, the `qa-tester` result (or
+     "n/a — no UI"), "CI green", and whether you checked it by hand. The record is the signal that
+     the PR is ready. Your reviewer reads it instead of re-running the agents, so a PR without it
+     gets checked again from scratch.
 9. **Ask the lead to review it, and don't merge it yourself.** The lead judges whether the change
    is what the user asked for, which the self-check can't.
    - The `dev-leader` team lives in the org that owns this repo, which is not always `jiannius`:
@@ -114,6 +119,7 @@ When asked to review, check the diff against Jiannius conventions and report fin
 - Follows the repo's own constitution (structure, naming, test rules).
 - Uses **Atom components** rather than bespoke UI where applicable.
 - **Pint-clean**; tests present; CI green on the PR head (read it, don't run the suite); `npm run build` covered if Tailwind/JS changed.
+- A new field, status, type, enum case or column that copies an existing sibling is handled everywhere the sibling is: casts, validation, audits, exports, filters, resources and tests.
 - Agent files current — `playbook:check` passes.
 - Use cases updated when the PR changes a flow described in `docs/use-cases/`.
 

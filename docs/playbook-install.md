@@ -579,6 +579,8 @@ project rather than as a clash.
 agent takes which task. There is no `AGENTS.md` version and no agent set for other tools; see the
 exception recorded under "Settled". It also carries one paragraph for after a QA report: when the report ends with `UI changes: yes — N after screenshots in <dir>, manifest <file> (M new screens)`, the main session asks once, "This involves UI changes — review it?", before starting `jiannius-ui-review`. That lives in the rule, not the skill, because the rule is always loaded and the skill is not.
 
+**The self-check rule is Claude-only too.** `.claude/rules/playbook/self-check.md` is the short form of `jiannius-dev` step 8: every pull request gets `pr-reviewer`, `qa-tester` when it touches the UI, green CI and a `## Self-check` section in its description before anyone is told it is ready. It is a rule rather than only a skill because the rule is always loaded and the skill is not, and a skill that does not load is how the self-check got skipped. Task agents report back instead of running it. There is no CI check for it yet; this is the rule alone, to see how it goes.
+
 **Data agents and staging.** `data-investigator` and `data-backfill` may run against staging, only
 when the person who asked for the task explicitly gave it. Production stays banned. The core guideline carries the
 same sentence, so the guideline and both agents change together.
