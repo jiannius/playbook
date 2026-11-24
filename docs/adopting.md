@@ -239,6 +239,9 @@ Guidelines are current             ← playbook:check
 Dependency advisories              ← high and critical block
 ```
 
+The guard skips a PR whose head is the integration branch, so the release PR (`dev` into `main`)
+passes it. Every other PR must target `dev`.
+
 Two failures that are not what they look like:
 
 - **The base-ref guard failing on a correctly-targeted PR.** `github.base_ref` comes from the event
