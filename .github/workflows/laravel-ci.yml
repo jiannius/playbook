@@ -220,8 +220,12 @@ jobs:
       # the guard reads the same stale base again. It takes a fresh event —
       # push a commit (`synchronize`), or `gh pr close N && gh pr reopen N`
       # (`reopened`). Confirm the fix by checking this step reports `skipped`.
+      #
+      # Exempt: a PR whose head IS the integration branch. The release PR
+      # (integration branch -> main) is the one PR allowed to target elsewhere,
+      # and without this it would carry a permanent red check onto the deploy.
       - name: Pull request must target ${{ inputs.base-branch }}
-        if: github.event_name == 'pull_request' && github.base_ref != inputs.base-branch
+        if: github.event_name == 'pull_request' && github.base_ref != inputs.base-branch && github.head_ref != inputs.base-branch
         run: |
           echo "::error::This PR targets '${{ github.base_ref }}' but the integration branch is '${{ inputs.base-branch }}'."
           echo "Retarget the pull request, then re-trigger with a fresh event:"
