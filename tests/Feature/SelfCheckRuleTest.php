@@ -35,6 +35,17 @@ it('names the steps of the self-check', function () {
         ->toContain('task agent');
 });
 
+it('agrees with step 8 of the jiannius-dev skill', function () {
+    $skill = (string) file_get_contents(dirname(__DIR__, 2).'/resources/boost/skills/jiannius-dev/SKILL.md');
+
+    expect($skill)
+        ->toContain('`## Self-check`')
+        ->toContain('gh pr checks <n> --watch')
+        ->toContain('Don\'t write the `Self-check` record while any check is pending')
+        ->toContain('the release PR')
+        ->toContain('`self-check.md`');
+});
+
 it('writes the rule byte for byte, as a regular file', function () {
     $dir = $this->fakeProject(boostJson(), installAgents: false);
 
