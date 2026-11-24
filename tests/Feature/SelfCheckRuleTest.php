@@ -92,3 +92,14 @@ it('reports STALE when the rule was edited', function () {
         ->assertExitCode(CheckCommand::STALE)
         ->expectsOutputToContain('differs from the packaged source');
 });
+
+it('has the reviewer check every place a copied sibling is handled', function () {
+    $root = dirname(__DIR__, 2);
+    $reviewer = (string) file_get_contents($root.'/resources/claude/agents/pr-reviewer.md');
+    $skill = (string) file_get_contents($root.'/resources/boost/skills/jiannius-dev/SKILL.md');
+
+    expect($reviewer)
+        ->toContain('mirrors an existing sibling')
+        ->toContain('casts, validation, audits, exports, filters, resources and tests');
+    expect($skill)->toContain('copies an existing sibling is handled everywhere the sibling is');
+});

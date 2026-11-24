@@ -119,6 +119,7 @@ When asked to review, check the diff against Jiannius conventions and report fin
 - Follows the repo's own constitution (structure, naming, test rules).
 - Uses **Atom components** rather than bespoke UI where applicable.
 - **Pint-clean**; tests present; CI green on the PR head (read it, don't run the suite); `npm run build` covered if Tailwind/JS changed.
+- A new field, status, type, enum case or column that copies an existing sibling is handled everywhere the sibling is: casts, validation, audits, exports, filters, resources and tests.
 - Agent files current — `playbook:check` passes.
 - Use cases updated when the PR changes a flow described in `docs/use-cases/`.
 
