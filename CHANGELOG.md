@@ -11,6 +11,25 @@ allow `0.6.0`. A minor release means raising the constraint. A patch release arr
 
 Upgrading across several minors? Do each minor's **Upgrading** steps in order, oldest first.
 
+## v0.6.8 — 2026-11-24
+
+### Fixed
+
+- The `laravel-ci` guard that a pull request must target the integration branch now skips the
+  release PR (integration branch into `main`), which used to carry a permanent red `ci / ci` check
+  onto the deploy. Every other PR must still target `dev`. (#37, #39)
+- `pr-reviewer` no longer runs the test suite. It reads the PR's CI checks with `gh pr checks`
+  and reports their state, and still judges whether the diff adds tests. Several reviewers running
+  at once, one per PR, each ran the whole suite on the local checkout, which was not the PR under
+  review. The `jiannius-dev` review checklist now means CI by "green". (#40)
+
+### Upgrading
+
+1. Run `php artisan boost:update` and commit `.claude/skills/` and `.claude/agents/`.
+2. Restart Claude Code once.
+
+The CI fix needs nothing: workflows called at `@v0` pick it up automatically.
+
 ## v0.6.7 — 2026-11-11
 
 ### Changed
