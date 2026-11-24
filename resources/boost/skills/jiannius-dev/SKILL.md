@@ -113,7 +113,7 @@ When asked to review, check the diff against Jiannius conventions and report fin
 - Conventional Commit messages; branch targets `dev`, not `main`.
 - Follows the repo's own constitution (structure, naming, test rules).
 - Uses **Atom components** rather than bespoke UI where applicable.
-- **Pint-clean**; tests present and green; `npm run build` covered if Tailwind/JS changed.
+- **Pint-clean**; tests present; CI green on the PR head (read it, don't run the suite); `npm run build` covered if Tailwind/JS changed.
 - Agent files current — `playbook:check` passes.
 - Use cases updated when the PR changes a flow described in `docs/use-cases/`.
 
